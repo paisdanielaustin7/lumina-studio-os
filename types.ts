@@ -251,7 +251,8 @@ export interface StudioSettings {
   studioName: string;
   tagline: string;
   city: string;
-  gstin: string;
+  hasGst?: boolean;
+  gstin?: string;
   bankingDetails: BankingDetails;
   contactPerson: string;
   contactPhone: string;

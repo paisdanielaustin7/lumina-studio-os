@@ -140,43 +140,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             type="submit"
             className="w-full py-2.5 bg-carbon text-bone dark:bg-white dark:text-carbon font-bold uppercase tracking-widest hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all text-xs"
           >
-            Authenticate & Sign In
+            Authenticate & Switch User
           </button>
         </form>
-
-        {/* Quick-Switch Accounts Bar */}
-        <div className="pt-3 border-t border-bone-border dark:border-obsidian-border space-y-2">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-bone-muted dark:text-obsidian-muted block">
-            Quick Switch Active Identity
-          </span>
-          <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-            {users.map((u) => {
-              const isActive = currentUser.id === u.id;
-              return (
-                <button
-                  key={u.id}
-                  onClick={() => handleQuickSwitch(u)}
-                  className={`p-2 text-left border transition-all ${
-                    isActive
-                      ? 'border-vermillion bg-vermillion/5'
-                      : 'border-bone-border dark:border-obsidian-border hover:border-carbon dark:hover:border-white'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[11px] truncate text-carbon dark:text-white">{u.username}</span>
-                    {isActive && <Check size={12} className="text-vermillion" />}
-                  </div>
-                  <span className="text-[9px] text-bone-muted dark:text-obsidian-muted block truncate">
-                    {u.role === 'ADMIN_DIRECTOR' ? 'Director' : 'Crew Unit'}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          <p className="text-[10px] text-bone-muted dark:text-obsidian-muted font-mono pt-1">
-            Admin Master Credentials: <code className="text-carbon dark:text-white font-bold">admin</code> / <code className="text-carbon dark:text-white font-bold">adminoflumina123</code>
-          </p>
-        </div>
       </div>
     </div>
   );

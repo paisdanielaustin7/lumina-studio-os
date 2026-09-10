@@ -164,8 +164,12 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({ invoices, settings, 
               <span className="font-bold text-carbon dark:text-white">{formatCurrency(selectedInvoice.subtotal)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-bone-muted dark:text-obsidian-muted uppercase">Integrated GST (18% CGST/SGST Included)</span>
-              <span className="text-carbon dark:text-white">₹0.00</span>
+              <span className="text-bone-muted dark:text-obsidian-muted uppercase">
+                {settings?.hasGst ? 'Integrated GST (18% CGST/SGST Included)' : 'GST Registration'}
+              </span>
+              <span className="text-carbon dark:text-white">
+                {settings?.hasGst ? '₹0.00' : 'Not Applicable (Small Business)'}
+              </span>
             </div>
             <div className="flex justify-between text-base font-bold pt-2 border-t border-bone-border dark:border-obsidian-border">
               <span className="uppercase text-carbon dark:text-white">Total Amount</span>

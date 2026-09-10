@@ -317,7 +317,11 @@ export const generateInvoicePDF = (
   doc.text(invoice.invoiceNumber, pageWidth - margin, 24, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
-  doc.text(`GSTIN: ${settings.gstin}`, pageWidth - margin, 28, { align: 'right' });
+  if (settings.hasGst && settings.gstin) {
+    doc.text(`GSTIN: ${settings.gstin}`, pageWidth - margin, 28, { align: 'right' });
+  } else {
+    doc.text(`Small Enterprise // Non-GST`, pageWidth - margin, 28, { align: 'right' });
+  }
 
   let y = 46;
 
@@ -325,7 +329,7 @@ export const generateInvoicePDF = (
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(30);
   doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
-  doc.text('TAX INVOICE', margin, y);
+  doc.text(settings.hasGst && settings.gstin ? 'TAX INVOICE' : 'STUDIO INVOICE', margin, y);
 
   y += 10;
   doc.setFontSize(9.5);

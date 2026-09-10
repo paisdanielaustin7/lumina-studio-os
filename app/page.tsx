@@ -503,12 +503,6 @@ export default function StudioOSHome() {
         onSelectModule={setActiveModule}
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
-        userRole={userRole}
-        setUserRole={(role) => {
-          setUserRole(role);
-          const found = users.find((u) => u.role === role);
-          if (found) handleSwitchUser(found);
-        }}
         currentUser={currentUser}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
         onLogout={handleLogout}
@@ -696,19 +690,11 @@ export default function StudioOSHome() {
                       <CheckCircle size={14} /> <span>Add / Edit User Credentials & Permissions</span>
                     </li>
                   </ul>
-                  <button
-                    onClick={() => {
-                      const admin = users.find((u) => u.username === 'admin') || defaultUsers[0];
-                      handleSwitchUser(admin);
-                    }}
-                    className={`w-full py-2.5 text-xs font-mono uppercase tracking-widest ${
-                      currentUser.role === 'ADMIN_DIRECTOR'
-                        ? 'bg-carbon text-bone dark:bg-white dark:text-carbon font-bold'
-                        : 'border border-bone-border dark:border-obsidian-border hover:border-carbon dark:hover:border-white'
-                    }`}
-                  >
-                    {currentUser.role === 'ADMIN_DIRECTOR' ? 'Current Active Role' : 'Switch to Director (admin)'}
-                  </button>
+                  <div className="pt-2">
+                    <div className="w-full py-2 text-center text-xs font-mono uppercase tracking-widest border border-bone-border dark:border-obsidian-border bg-bone-surface dark:bg-obsidian-surface text-bone-muted dark:text-obsidian-muted">
+                      {currentUser.role === 'ADMIN_DIRECTOR' ? 'Active Authenticated Role' : 'Admin Credentials Required'}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="p-6 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-4">
@@ -732,19 +718,11 @@ export default function StudioOSHome() {
                       <Lock size={14} /> <span>Financial retainers & ledger hidden</span>
                     </li>
                   </ul>
-                  <button
-                    onClick={() => {
-                      const crew = users.find((u) => u.role === 'SECOND_SHOOTER') || defaultUsers[1];
-                      handleSwitchUser(crew);
-                    }}
-                    className={`w-full py-2.5 text-xs font-mono uppercase tracking-widest ${
-                      currentUser.role === 'SECOND_SHOOTER'
-                        ? 'bg-carbon text-bone dark:bg-white dark:text-carbon font-bold'
-                        : 'border border-bone-border dark:border-obsidian-border hover:border-carbon dark:hover:border-white'
-                    }`}
-                  >
-                    {currentUser.role === 'SECOND_SHOOTER' ? 'Current Active Role' : 'Switch to Second Shooter'}
-                  </button>
+                  <div className="pt-2">
+                    <div className="w-full py-2 text-center text-xs font-mono uppercase tracking-widest border border-bone-border dark:border-obsidian-border bg-bone-surface dark:bg-obsidian-surface text-bone-muted dark:text-obsidian-muted">
+                      {currentUser.role === 'SECOND_SHOOTER' ? 'Active Authenticated Role' : 'Assigned to Crew Unit'}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

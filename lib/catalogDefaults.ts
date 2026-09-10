@@ -101,7 +101,8 @@ export const defaultStudioSettings: StudioSettings = {
   studioName: 'LUMINA',
   tagline: 'Wedding Cinemastory & Stills // Mangalore',
   city: 'Mangalore, Karnataka',
-  gstin: '29AABCL1984M1Z8',
+  hasGst: false,
+  gstin: '',
   bankingDetails: {
     accountName: 'LUMINA ATELIER STUDIOS LLP',
     bankName: 'HDFC Bank Ltd',

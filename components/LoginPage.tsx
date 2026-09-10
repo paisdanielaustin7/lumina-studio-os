@@ -75,12 +75,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ users, onLoginSuccess }) =
     }, 350);
   };
 
-  const handleQuickFill = (u: string, p: string) => {
-    setUsername(u);
-    setPassword(p);
-    setError(null);
-  };
-
   return (
     <div className="min-h-screen w-screen bg-[#0a0a0a] text-white flex flex-col justify-between selection:bg-vermillion selection:text-white relative overflow-hidden font-mono">
       {/* Background Architectural Grid Lines */}
@@ -207,46 +201,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ users, onLoginSuccess }) =
               <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </button>
           </form>
-
-          {/* Quick Credential Hints for Convenience & Testing */}
-          <div className="pt-4 border-t border-white/10 space-y-2.5">
-            <span className="text-[10px] uppercase tracking-widest text-white/40 block">
-              Default Master Credentials (Click to pre-fill):
-            </span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-              <button
-                type="button"
-                onClick={() => handleQuickFill('admin', 'adminoflumina123')}
-                className="p-2.5 bg-white/5 border border-white/10 hover:border-vermillion hover:bg-white/10 text-left transition-all group"
-              >
-                <div className="flex items-center justify-between font-bold text-white group-hover:text-vermillion">
-                  <span>admin</span>
-                  <span className="text-[9px] px-1.5 py-0.2 bg-vermillion/20 text-vermillion font-mono">
-                    ROOT
-                  </span>
-                </div>
-                <div className="text-[10px] text-white/50 truncate font-mono mt-0.5">
-                  adminoflumina123
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('roshan', 'crewpass123')}
-                className="p-2.5 bg-white/5 border border-white/10 hover:border-white hover:bg-white/10 text-left transition-all"
-              >
-                <div className="flex items-center justify-between font-bold text-white">
-                  <span>roshan</span>
-                  <span className="text-[9px] px-1.5 py-0.2 bg-white/10 text-white/70 font-mono">
-                    CREW
-                  </span>
-                </div>
-                <div className="text-[10px] text-white/50 truncate font-mono mt-0.5">
-                  crewpass123
-                </div>
-              </button>
-            </div>
-          </div>
 
           {/* Security Assurance Badge */}
           <div className="flex items-center justify-between text-[10px] uppercase text-white/40 pt-2 border-t border-white/10">
