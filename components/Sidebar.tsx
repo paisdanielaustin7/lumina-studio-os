@@ -19,6 +19,7 @@ import {
   Camera,
   KeyRound,
   Lock,
+  LogOut,
 } from 'lucide-react';
 import { ViewModule, UserRole, UserAccount } from '@/types';
 import { useTheme } from './ThemeContext';
@@ -32,6 +33,7 @@ interface SidebarProps {
   setUserRole: (role: UserRole) => void;
   currentUser: UserAccount;
   onOpenLoginModal: () => void;
+  onLogout: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -43,6 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setUserRole,
   currentUser,
   onOpenLoginModal,
+  onLogout,
 }) => {
   const { theme, toggleTheme } = useTheme();
 
@@ -269,15 +272,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
           {!isCollapsed && (
-            <button
-              onClick={onOpenLoginModal}
-              className="p-1 text-bone-muted dark:text-obsidian-muted hover:text-vermillion dark:hover:text-vermillion transition-colors"
-              title="Switch Account / Authenticate"
-            >
-              <KeyRound size={13} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={onOpenLoginModal}
+                className="p-1 text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white transition-colors"
+                title="Switch Account / Authenticate"
+              >
+                <KeyRound size={13} />
+              </button>
+              <button
+                onClick={onLogout}
+                className="p-1 text-vermillion hover:bg-vermillion/10 transition-colors"
+                title="Sign Out & Lock System"
+              >
+                <LogOut size={13} />
+              </button>
+            </div>
           )}
         </div>
+
+        {/* Explicit Full Logout Action */}
+        <button
+          onClick={onLogout}
+          className={`w-full flex items-center ${
+            isCollapsed ? 'justify-center' : 'justify-between'
+          } p-2 text-xs font-mono uppercase tracking-wider text-vermillion hover:text-white hover:bg-vermillion border border-vermillion/30 transition-all font-bold group`}
+          title="Sign Out & Exit to Login Page"
+        >
+          <div className="flex items-center gap-2">
+            <LogOut size={13} />
+            {!isCollapsed && <span className="text-[11px]">Sign Out / Lock</span>}
+          </div>
+          {!isCollapsed && (
+            <span className="text-[9px] px-1 py-0.2 bg-vermillion/20 group-hover:bg-white group-hover:text-vermillion font-mono">
+              EXIT
+            </span>
+          )}
+        </button>
       </div>
     </motion.aside>
   );

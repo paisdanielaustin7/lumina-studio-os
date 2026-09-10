@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/Sidebar';
 import { DashboardView } from '@/components/DashboardView';
 import { CalendarView } from '@/components/CalendarView';
@@ -9,6 +9,7 @@ import { InvoicesView } from '@/components/InvoicesView';
 import { QuotationView } from '@/components/QuotationView';
 import { SettingsView } from '@/components/SettingsView';
 import { LoginModal } from '@/components/LoginModal';
+import { LoginPage } from '@/components/LoginPage';
 import {
   mockKPISummary,
   mockShoots,
@@ -42,6 +43,7 @@ import {
   KeyRound,
   ExternalLink,
   Users,
+  LogOut,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -54,8 +56,9 @@ export default function StudioOSHome() {
   // Authentication & Settings State
   const [studioSettings, setStudioSettings] = useState<StudioSettings>(defaultStudioSettings);
   const [users, setUsers] = useState<UserAccount[]>(defaultUsers);
-  const [currentUser, setCurrentUser] = useState<UserAccount>(defaultUsers[0]);
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   // Synced Live State across all modules
   const [quotations, setQuotations] = useState<Quotation[]>(mockQuotations);
@@ -64,6 +67,92 @@ export default function StudioOSHome() {
   const [ledger, setLedger] = useState<LedgerEntry[]>(mockLedger);
   const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
   const [kpi, setKpi] = useState<KPISummary>(mockKPISummary);
+
+  // Restore saved users & active session from browser storage on mount
+  useEffect(() => {
+    let activeUsersList = defaultUsers;
+
+    if (typeof window !== 'undefined') {
+      const savedUsers = localStorage.getItem('lumina_users');
+      if (savedUsers) {
+        try {
+          const parsed = JSON.parse(savedUsers);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            activeUsersList = parsed;
+            setUsers(parsed);
+          }
+        } catch (e) {
+          console.error('Failed to parse saved users', e);
+        }
+      }
+
+      const savedSettings = localStorage.getItem('lumina_settings');
+      if (savedSettings) {
+        try {
+          const parsedSettings = JSON.parse(savedSettings);
+          setStudioSettings(parsedSettings);
+        } catch (e) {
+          console.error('Failed to parse saved settings', e);
+        }
+      }
+
+      // Check active session
+      const savedSession = sessionStorage.getItem('lumina_active_session');
+      if (savedSession) {
+        try {
+          const session = JSON.parse(savedSession);
+          const matched = activeUsersList.find(
+            (u) => u.id === session.userId || u.username === session.username
+          );
+          if (matched) {
+            setCurrentUser(matched);
+            setUserRole(matched.role);
+          }
+        } catch (e) {
+          console.error('Failed to restore session', e);
+        }
+      }
+    }
+
+    setIsAuthChecking(false);
+  }, []);
+
+  const handleUpdateUsers = (newUsers: UserAccount[]) => {
+    setUsers(newUsers);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('lumina_users', JSON.stringify(newUsers));
+    }
+  };
+
+  const handleUpdateSettings = (newSettings: StudioSettings) => {
+    setStudioSettings(newSettings);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('lumina_settings', JSON.stringify(newSettings));
+    }
+  };
+
+  const handleLoginSuccess = (user: UserAccount) => {
+    setCurrentUser(user);
+    setUserRole(user.role);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(
+        'lumina_active_session',
+        JSON.stringify({
+          userId: user.id,
+          username: user.username,
+          role: user.role,
+          loggedInAt: new Date().toISOString(),
+        })
+      );
+    }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('lumina_active_session');
+    }
+  };
 
   const handleSelectShoot = (shoot: ShootBooking | null) => {
     setSelectedShoot(shoot);
@@ -163,14 +252,12 @@ export default function StudioOSHome() {
 
   // 4. One-Click Conversion: Quotation -> Confirmed Booking / Order
   const handleConvertQuotationToBooking = (quote: Quotation) => {
-    // Update quotation status
     const updatedQuote: Quotation = {
       ...quote,
       status: 'CONVERTED',
     };
     handleUpdateQuotation(updatedQuote);
 
-    // If enquiry linked, mark enquiry as CONVERTED
     if (quote.enquiryId) {
       setEnquiries(
         enquiries.map((e) =>
@@ -183,7 +270,6 @@ export default function StudioOSHome() {
     const advance = (quote.totalPrice * quote.advancePercentage) / 100;
     const balance = quote.totalPrice - advance;
 
-    // Create confirmed ShootBooking
     const newBooking: ShootBooking = {
       id: `sht-${Date.now()}`,
       shootCode: code,
@@ -245,7 +331,6 @@ export default function StudioOSHome() {
 
     setBookings([newBooking, ...bookings]);
 
-    // Also auto-generate matching Invoice
     const newInvoice: Invoice = {
       id: `inv-${Date.now()}`,
       invoiceNumber: `INV-2026-0${Math.floor(100 + Math.random() * 899)}`,
@@ -284,7 +369,6 @@ export default function StudioOSHome() {
     clientName: string;
     notes?: string;
   }) => {
-    // A. Add to Live Dual Ledger
     const newLedgerEntry: LedgerEntry = {
       id: `led-${Date.now()}`,
       transactionRef: payment.reference,
@@ -300,7 +384,6 @@ export default function StudioOSHome() {
     };
     setLedger([newLedgerEntry, ...ledger]);
 
-    // B. Update Matching Booking (Order)
     setBookings(
       bookings.map((b) => {
         if (
@@ -322,7 +405,6 @@ export default function StudioOSHome() {
       })
     );
 
-    // C. Update Matching Invoice
     setInvoices(
       invoices.map((inv) => {
         if (inv.clientName.toLowerCase() === payment.clientName.toLowerCase()) {
@@ -337,7 +419,6 @@ export default function StudioOSHome() {
       })
     );
 
-    // D. Update Studio KPI Vault
     setKpi({
       ...kpi,
       cashFlow: {
@@ -375,7 +456,35 @@ export default function StudioOSHome() {
   const handleSwitchUser = (user: UserAccount) => {
     setCurrentUser(user);
     setUserRole(user.role);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(
+        'lumina_active_session',
+        JSON.stringify({
+          userId: user.id,
+          username: user.username,
+          role: user.role,
+          loggedInAt: new Date().toISOString(),
+        })
+      );
+    }
   };
+
+  // If initial auth check is ongoing, display luxury editorial loader
+  if (isAuthChecking) {
+    return (
+      <div className="h-screen w-screen bg-[#0a0a0a] flex items-center justify-center font-mono text-white text-xs tracking-widest uppercase">
+        <div className="flex items-center gap-3">
+          <span className="w-2 h-2 rounded-full bg-vermillion animate-ping" />
+          <span>INITIALIZING LUMINA STUDIO OS // PLEASE WAIT...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // ENFORCED SECURITY: User must land on Login Page unless authenticated
+  if (!currentUser) {
+    return <LoginPage users={users} onLoginSuccess={handleLoginSuccess} />;
+  }
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-bone dark:bg-obsidian text-carbon dark:text-white">
@@ -398,15 +507,16 @@ export default function StudioOSHome() {
         setUserRole={(role) => {
           setUserRole(role);
           const found = users.find((u) => u.role === role);
-          if (found) setCurrentUser(found);
+          if (found) handleSwitchUser(found);
         }}
         currentUser={currentUser}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
+        onLogout={handleLogout}
       />
 
       {/* Main Studio Viewport */}
       <main className="flex-1 h-screen overflow-y-auto relative flex flex-col">
-        {/* Subtle Top Status Bar */}
+        {/* Subtle Top Status Bar with Logout Action */}
         <div className="h-10 px-6 border-b border-bone-border dark:border-obsidian-border flex items-center justify-between text-[11px] font-mono shrink-0 bg-bone-surface/60 dark:bg-obsidian-surface/60">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400 font-bold">
@@ -422,12 +532,26 @@ export default function StudioOSHome() {
           <div className="flex items-center gap-4 text-bone-muted dark:text-obsidian-muted">
             <button
               onClick={() => setIsLoginModalOpen(true)}
-              className="text-xs uppercase font-mono tracking-wider hover:text-carbon dark:hover:text-white flex items-center gap-1.5 text-vermillion font-bold"
+              className="text-xs uppercase font-mono tracking-wider hover:text-carbon dark:hover:text-white flex items-center gap-1.5 text-carbon dark:text-white transition-colors"
+              title="Switch identity"
             >
               <KeyRound size={12} />
-              <span>Switch User</span>
+              <span className="hidden sm:inline">Switch User</span>
             </button>
-            <span className="hidden md:inline">COLOR: PROPHOTO RGB // MANGALORE HQ</span>
+
+            {/* Prominent Logout Button */}
+            <button
+              onClick={handleLogout}
+              className="text-xs uppercase font-mono tracking-wider text-vermillion hover:text-white hover:bg-vermillion border border-vermillion/40 px-2.5 py-0.5 transition-all flex items-center gap-1.5 font-bold"
+              title="Exit session and lock system"
+            >
+              <LogOut size={12} />
+              <span>Logout</span>
+            </button>
+
+            <span className="hidden lg:inline text-bone-muted/70 dark:text-obsidian-muted/70">
+              MANGALORE HQ
+            </span>
             <Link
               href="/about"
               className="text-carbon dark:text-white hover:text-vermillion dark:hover:text-vermillion transition-colors flex items-center gap-1 uppercase font-bold"
@@ -512,14 +636,14 @@ export default function StudioOSHome() {
                     className="px-4 py-2.5 bg-carbon text-bone dark:bg-white dark:text-carbon text-xs font-mono uppercase tracking-widest font-bold hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all flex items-center gap-2"
                   >
                     <Users size={14} />
-                    <span>Manage User Accounts</span>
+                    <span>Manage User Accounts in Settings</span>
                   </button>
                   <button
-                    onClick={() => setIsLoginModalOpen(true)}
-                    className="px-4 py-2.5 border border-bone-border dark:border-obsidian-border text-xs font-mono uppercase tracking-widest hover:border-carbon dark:hover:border-white transition-all flex items-center gap-2"
+                    onClick={handleLogout}
+                    className="px-4 py-2.5 text-vermillion border border-vermillion/40 text-xs font-mono uppercase tracking-widest hover:bg-vermillion hover:text-white transition-all flex items-center gap-2 font-bold"
                   >
-                    <KeyRound size={14} />
-                    <span>Switch Login</span>
+                    <LogOut size={14} />
+                    <span>Logout Session</span>
                   </button>
                 </div>
               </div>
@@ -532,13 +656,21 @@ export default function StudioOSHome() {
                   </span>
                   <h3 className="text-2xl font-serif font-bold uppercase">{currentUser.fullName}</h3>
                   <p className="text-xs font-mono text-bone-muted dark:text-obsidian-muted">
-                    Username: <code className="text-carbon dark:text-white font-bold">@{currentUser.username}</code> | Assigned Role: <span className="font-bold uppercase text-carbon dark:text-white">{currentUser.role}</span>
+                    Username: <code className="text-carbon dark:text-white font-bold">@{currentUser.username}</code> | Assigned Role:{' '}
+                    <span className="font-bold uppercase text-carbon dark:text-white">{currentUser.role}</span>
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <span className="px-3 py-1 bg-green-500/10 border border-green-500/30 text-green-600 dark:text-green-400 font-mono text-xs uppercase font-bold">
                     Engine Session Active
                   </span>
+                  <button
+                    onClick={handleLogout}
+                    className="px-3 py-1 bg-vermillion text-white text-xs font-mono uppercase tracking-widest font-bold flex items-center gap-1.5 hover:bg-black transition-colors"
+                  >
+                    <LogOut size={12} />
+                    <span>Sign Out</span>
+                  </button>
                 </div>
               </div>
 
@@ -561,7 +693,7 @@ export default function StudioOSHome() {
                       <CheckCircle size={14} /> <span>Create / Modify / Void Invoices & Quotes</span>
                     </li>
                     <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                      <CheckCircle size={14} /> <span>Edit Pre-defined catalog items</span>
+                      <CheckCircle size={14} /> <span>Add / Edit User Credentials & Permissions</span>
                     </li>
                   </ul>
                   <button
@@ -618,14 +750,14 @@ export default function StudioOSHome() {
             </div>
           )}
 
-          {/* Settings Module */}
+          {/* Settings Module (Allows Admin to Add/Edit/Delete Users & Permissions) */}
           {activeModule === 'settings' && (
             <SettingsView
               settings={studioSettings}
-              onUpdateSettings={setStudioSettings}
+              onUpdateSettings={handleUpdateSettings}
               users={users}
               currentUser={currentUser}
-              onUpdateUsers={setUsers}
+              onUpdateUsers={handleUpdateUsers}
               onOpenLoginModal={() => setIsLoginModalOpen(true)}
             />
           )}
