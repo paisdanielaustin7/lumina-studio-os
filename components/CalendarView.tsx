@@ -19,6 +19,7 @@ import {
   Download,
 } from 'lucide-react';
 import { ShootBooking, ShootType } from '@/types';
+import { generateCallSheetPDF } from '@/lib/pdfGenerator';
 
 interface CalendarViewProps {
   shoots: ShootBooking[];
@@ -425,11 +426,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               {/* Drawer Footer Actions */}
               <div className="p-4 border-t border-bone-border dark:border-obsidian-border bg-bone-card dark:bg-obsidian-surface sticky bottom-0 flex items-center gap-3">
                 <button
-                  onClick={() => alert(`Call sheet PDF for ${selectedShoot.shootCode} generated and downloaded.`)}
+                  onClick={() => generateCallSheetPDF(selectedShoot)}
                   className="flex-1 py-2.5 text-xs font-mono uppercase tracking-widest bg-carbon text-bone dark:bg-white dark:text-carbon hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all flex items-center justify-center gap-2"
                 >
                   <Download size={14} />
-                  <span>Export Call Sheet PDF</span>
+                  <span>Download Call Sheet PDF</span>
                 </button>
                 <button
                   onClick={() => onSelectShoot(null)}

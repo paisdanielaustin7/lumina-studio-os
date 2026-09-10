@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Invoice } from '@/types';
 import { FileText, Download, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { generateInvoicePDF } from '@/lib/pdfGenerator';
 
 interface InvoicesViewProps {
   invoices: Invoice[];
@@ -173,11 +174,11 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({ invoices }) => {
 
           <div className="pt-4 flex gap-3">
             <button
-              onClick={() => alert(`Invoice ${selectedInvoice.invoiceNumber} PDF generated.`)}
+              onClick={() => generateInvoicePDF(selectedInvoice)}
               className="flex-1 py-2.5 text-xs font-mono uppercase tracking-widest bg-carbon text-bone dark:bg-white dark:text-carbon hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all flex items-center justify-center gap-2"
             >
               <Download size={14} />
-              <span>Export Official Invoice PDF</span>
+              <span>Download Tax Invoice PDF</span>
             </button>
           </div>
         </div>
