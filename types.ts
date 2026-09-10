@@ -236,7 +236,16 @@ export type ViewModule =
 
 export type UserRole = 'ADMIN_DIRECTOR' | 'SECOND_SHOOTER' | 'PRODUCER';
 
-export type PDFThemeColor = 'sage' | 'monochrome' | 'sand_gold' | 'terracotta';
+export type PDFThemeColor = 'sage' | 'monochrome' | 'sand_gold' | 'terracotta' | string;
+
+export interface CustomThemePalette {
+  id: string;
+  name: string;
+  primaryColor: string; // Hex color e.g. #2e4a62
+  backgroundColor: string; // Hex color e.g. #f4f7f9
+  textColor: string; // Hex color e.g. #111a24
+  desc?: string;
+}
 
 export interface BankingDetails {
   accountName: string;
@@ -258,6 +267,7 @@ export interface StudioSettings {
   contactPhone: string;
   termsAndConditions: string[];
   pdfThemeColor: PDFThemeColor;
+  customPalettes?: CustomThemePalette[];
 }
 
 export interface UserAccount {

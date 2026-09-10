@@ -9,7 +9,6 @@ const formatINR = (val: number): string => {
   }).format(val) + ' /-';
 };
 
-// Color palettes for PDF theme customizer
 interface PDFColorPalette {
   bg: [number, number, number];
   strip: [number, number, number];
@@ -18,7 +17,7 @@ interface PDFColorPalette {
   accent: [number, number, number];
 }
 
-const PDF_PALETTES: Record<PDFThemeColor, PDFColorPalette> = {
+const PDF_PALETTES: Record<string, PDFColorPalette> = {
   sage: {
     bg: [243, 247, 244],
     strip: [228, 237, 231],
@@ -49,6 +48,62 @@ const PDF_PALETTES: Record<PDFThemeColor, PDFColorPalette> = {
   },
 };
 
+// Helper: Convert hex to RGB tuple
+const hexToRgb = (hex: string): [number, number, number] => {
+  let clean = hex.replace('#', '').trim();
+  if (clean.length === 3) {
+    clean = clean.split('').map((c) => c + c).join('');
+  }
+  const num = parseInt(clean, 16);
+  if (isNaN(num)) return [15, 23, 20];
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+};
+
+// Helper: Blend two RGB colors
+const blendRgb = (
+  c1: [number, number, number],
+  c2: [number, number, number],
+  ratio: number
+): [number, number, number] => {
+  return [
+    Math.round(c1[0] * (1 - ratio) + c2[0] * ratio),
+    Math.round(c1[1] * (1 - ratio) + c2[1] * ratio),
+    Math.round(c1[2] * (1 - ratio) + c2[2] * ratio),
+  ];
+};
+
+// Resolves theme palette from presets or custom customer palettes defined in settings
+export const resolvePDFPalette = (settings: StudioSettings): PDFColorPalette => {
+  const themeId = settings.pdfThemeColor || 'sage';
+
+  // Check preset first
+  if (PDF_PALETTES[themeId]) {
+    return PDF_PALETTES[themeId];
+  }
+
+  // Check custom palettes
+  if (settings.customPalettes && settings.customPalettes.length > 0) {
+    const found = settings.customPalettes.find((p) => p.id === themeId);
+    if (found) {
+      const primaryRgb = hexToRgb(found.primaryColor);
+      const bgRgb = hexToRgb(found.backgroundColor || '#f8f9fa');
+      const textRgb = hexToRgb(found.textColor || '#111827');
+      const stripRgb = blendRgb(bgRgb, primaryRgb, 0.12);
+      const mutedRgb = blendRgb(textRgb, [150, 150, 150], 0.45);
+
+      return {
+        bg: bgRgb,
+        strip: stripRgb,
+        text: textRgb,
+        muted: mutedRgb,
+        accent: primaryRgb,
+      };
+    }
+  }
+
+  return PDF_PALETTES.sage;
+};
+
 /**
  * Generates an exact 2-page luxury Quotation PDF with custom theme colour and studio settings
  */
@@ -67,7 +122,7 @@ export const generateQuotationPDF = (
   const margin = 20;
   const contentWidth = pageWidth - margin * 2;
 
-  const palette = PDF_PALETTES[settings.pdfThemeColor || 'sage'] || PDF_PALETTES.sage;
+  const palette = resolvePDFPalette(settings);
 
   // Background tint
   const drawBackground = () => {
@@ -294,7 +349,7 @@ export const generateInvoicePDF = (
   const margin = 20;
   const contentWidth = pageWidth - margin * 2;
 
-  const palette = PDF_PALETTES[settings.pdfThemeColor || 'sage'] || PDF_PALETTES.sage;
+  const palette = resolvePDFPalette(settings);
 
   // Background tint
   doc.setFillColor(palette.bg[0], palette.bg[1], palette.bg[2]);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Settings,
@@ -26,6 +26,7 @@ import {
   StudioSettings,
   UserAccount,
   PDFThemeColor,
+  CustomThemePalette,
   UserRole,
 } from '@/types';
 
@@ -54,6 +55,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   // PDF Theme & Studio Info State
   const [studioForm, setStudioForm] = useState<StudioSettings>(settings);
   const [isSavedBanner, setIsSavedBanner] = useState(false);
+
+  // Custom Color Palette Creator State (Admin only)
+  const [showAddColorModal, setShowAddColorModal] = useState(false);
+  const [customPaletteName, setCustomPaletteName] = useState('');
+  const [customPrimaryColor, setCustomPrimaryColor] = useState('#2e4a62');
+  const [customBgColor, setCustomBgColor] = useState('#f4f7f9');
+  const [customTextColor, setCustomTextColor] = useState('#111a24');
+  const [customDesc, setCustomDesc] = useState('Bespoke client editorial tone.');
 
   // Terms State
   const [terms, setTerms] = useState<string[]>(settings.termsAndConditions);
@@ -84,6 +93,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     canEditLedger: false,
   });
 
+  // Escape key listener for SettingsView modals
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showAddColorModal) {
+          setShowAddColorModal(false);
+        } else if (isUserModalOpen) {
+          setIsUserModalOpen(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showAddColorModal, isUserModalOpen]);
+
   const showSuccessFeedback = () => {
     setIsSavedBanner(true);
     setTimeout(() => setIsSavedBanner(false), 3000);
@@ -104,6 +128,56 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     const updated = { ...studioForm, pdfThemeColor: color };
     setStudioForm(updated);
     onUpdateSettings({ ...updated, termsAndConditions: terms });
+    showSuccessFeedback();
+  };
+
+  // Add custom color palette (Admin)
+  const handleAddCustomPalette = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canEdit || !customPaletteName.trim()) return;
+
+    const newPaletteId = `custom-${Date.now()}`;
+    const newPalette: CustomThemePalette = {
+      id: newPaletteId,
+      name: customPaletteName.trim(),
+      primaryColor: customPrimaryColor,
+      backgroundColor: customBgColor,
+      textColor: customTextColor,
+      desc: customDesc.trim() || 'Custom bespoke studio palette.',
+    };
+
+    const existingPalettes = studioForm.customPalettes || [];
+    const updatedPalettes = [...existingPalettes, newPalette];
+    const updatedSettings = {
+      ...studioForm,
+      pdfThemeColor: newPaletteId,
+      customPalettes: updatedPalettes,
+      termsAndConditions: terms,
+    };
+
+    setStudioForm(updatedSettings);
+    onUpdateSettings(updatedSettings);
+    setShowAddColorModal(false);
+    setCustomPaletteName('');
+    showSuccessFeedback();
+  };
+
+  // Delete custom color palette (Admin)
+  const handleDeleteCustomPalette = (paletteId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!canEdit) return;
+
+    const existingPalettes = studioForm.customPalettes || [];
+    const updatedPalettes = existingPalettes.filter((p) => p.id !== paletteId);
+    const updatedSettings = {
+      ...studioForm,
+      pdfThemeColor: studioForm.pdfThemeColor === paletteId ? 'sage' : studioForm.pdfThemeColor,
+      customPalettes: updatedPalettes,
+      termsAndConditions: terms,
+    };
+
+    setStudioForm(updatedSettings);
+    onUpdateSettings(updatedSettings);
     showSuccessFeedback();
   };
 
@@ -320,12 +394,25 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   Palette applied to generated Quotation and Invoice PDFs.
                 </p>
               </div>
-              <span className="text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 bg-vermillion text-white font-bold">
-                Active: {studioForm.pdfThemeColor.toUpperCase()}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 bg-vermillion text-white font-bold">
+                  Active: {studioForm.pdfThemeColor.toUpperCase()}
+                </span>
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddColorModal(true)}
+                    className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider bg-carbon text-bone dark:bg-white dark:text-carbon font-bold hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all flex items-center gap-1"
+                  >
+                    <Plus size={12} />
+                    <span>Add Custom Color</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+              {/* 1. Presets */}
               {[
                 {
                   id: 'sage' as PDFThemeColor,
@@ -333,6 +420,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   bgChip: '#f8faf9',
                   accentChip: '#284638',
                   desc: 'Mangalore botanical green and forest slate.',
+                  isCustom: false,
                 },
                 {
                   id: 'monochrome' as PDFThemeColor,
@@ -340,6 +428,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   bgChip: '#fafafa',
                   accentChip: '#111111',
                   desc: 'Editorial brutalist black and bone silver.',
+                  isCustom: false,
                 },
                 {
                   id: 'sand_gold' as PDFThemeColor,
@@ -347,6 +436,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   bgChip: '#fbf9f4',
                   accentChip: '#7d6124',
                   desc: 'Sun-bleached coastal sands and archival sepia.',
+                  isCustom: false,
                 },
                 {
                   id: 'terracotta' as PDFThemeColor,
@@ -354,6 +444,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   bgChip: '#fdf9f8',
                   accentChip: '#a33325',
                   desc: 'Coastal tile red and raw earth tones.',
+                  isCustom: false,
                 },
               ].map((themeOpt) => {
                 const isSelected = studioForm.pdfThemeColor === themeOpt.id;
@@ -391,8 +482,217 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   </div>
                 );
               })}
+
+              {/* 2. Customer Added Palettes */}
+              {(studioForm.customPalettes || []).map((cp) => {
+                const isSelected = studioForm.pdfThemeColor === cp.id;
+                return (
+                  <div
+                    key={cp.id}
+                    onClick={() => canEdit && handleSelectPDFTheme(cp.id)}
+                    className={`p-3 border transition-all space-y-2 relative group ${
+                      canEdit ? 'cursor-pointer' : 'cursor-default'
+                    } ${
+                      isSelected
+                        ? 'border-2 border-carbon dark:border-white bg-bone-surface dark:bg-obsidian-surface'
+                        : 'border-bone-border dark:border-obsidian-border hover:border-carbon dark:hover:border-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-4 h-4 rounded-full border border-black/20"
+                          style={{ backgroundColor: cp.backgroundColor }}
+                          title={`Background: ${cp.backgroundColor}`}
+                        />
+                        <span
+                          className="w-4 h-4 rounded-full border border-black/20"
+                          style={{ backgroundColor: cp.primaryColor }}
+                          title={`Accent: ${cp.primaryColor}`}
+                        />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {isSelected && <Check size={13} className="text-vermillion" />}
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteCustomPalette(cp.id, e)}
+                            className="p-0.5 text-bone-muted hover:text-vermillion transition-colors"
+                            title="Delete custom color palette"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-carbon dark:text-white uppercase text-[11px] truncate">
+                          {cp.name}
+                        </span>
+                        <span className="text-[8px] font-mono px-1 py-0.2 bg-carbon/10 dark:bg-white/10 text-bone-muted uppercase font-bold shrink-0">
+                          Custom
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-bone-muted dark:text-obsidian-muted mt-0.5 truncate">
+                        {cp.desc}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
+
+          {/* Add Custom Color Palette Modal */}
+          {showAddColorModal && canEdit && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-carbon/80 dark:bg-black/80 backdrop-blur-sm animate-fadeIn">
+              <div className="relative w-full max-w-md bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white shadow-2xl p-6 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-bone-border dark:border-obsidian-border">
+                  <div>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-vermillion font-bold block">
+                      Bespoke Brand Styling
+                    </span>
+                    <h2 className="text-xl font-serif font-black uppercase tracking-tight text-carbon dark:text-white">
+                      Add Custom Theme Color
+                    </h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddColorModal(false)}
+                    className="text-xs font-mono text-bone-muted hover:text-carbon dark:hover:text-white"
+                  >
+                    [ESC]
+                  </button>
+                </div>
+
+                <form onSubmit={handleAddCustomPalette} className="space-y-3.5 text-xs font-mono">
+                  <div>
+                    <label className="block text-[10px] uppercase text-bone-muted mb-1">
+                      Palette Name / Client Label
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Royal Emerald & Ivory, Panambur Indigo"
+                      value={customPaletteName}
+                      onChange={(e) => setCustomPaletteName(e.target.value)}
+                      className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[9.5px] uppercase text-bone-muted mb-1">
+                        Accent / Brand
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={customPrimaryColor}
+                          onChange={(e) => setCustomPrimaryColor(e.target.value)}
+                          className="w-8 h-8 rounded border border-bone-border cursor-pointer bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          value={customPrimaryColor}
+                          onChange={(e) => setCustomPrimaryColor(e.target.value)}
+                          className="w-full p-1.5 text-[10px] bg-bone-surface dark:bg-obsidian-surface border border-bone-border uppercase font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[9.5px] uppercase text-bone-muted mb-1">
+                        Page Tint (Light)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={customBgColor}
+                          onChange={(e) => setCustomBgColor(e.target.value)}
+                          className="w-8 h-8 rounded border border-bone-border cursor-pointer bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          value={customBgColor}
+                          onChange={(e) => setCustomBgColor(e.target.value)}
+                          className="w-full p-1.5 text-[10px] bg-bone-surface dark:bg-obsidian-surface border border-bone-border uppercase font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[9.5px] uppercase text-bone-muted mb-1">
+                        Body Text
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={customTextColor}
+                          onChange={(e) => setCustomTextColor(e.target.value)}
+                          className="w-8 h-8 rounded border border-bone-border cursor-pointer bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          value={customTextColor}
+                          onChange={(e) => setCustomTextColor(e.target.value)}
+                          className="w-full p-1.5 text-[10px] bg-bone-surface dark:bg-obsidian-surface border border-bone-border uppercase font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] uppercase text-bone-muted mb-1">
+                      Palette Description
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Crafted for high-contrast beach nuptials"
+                      value={customDesc}
+                      onChange={(e) => setCustomDesc(e.target.value)}
+                      className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white"
+                    />
+                  </div>
+
+                  {/* Live Palette Card Preview */}
+                  <div
+                    className="p-3 border rounded-sm space-y-1.5"
+                    style={{ backgroundColor: customBgColor, color: customTextColor }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-serif font-black uppercase text-xs" style={{ color: customPrimaryColor }}>
+                        LUMINA // Preview
+                      </span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded font-bold" style={{ backgroundColor: customPrimaryColor, color: '#ffffff' }}>
+                        SAMPLE
+                      </span>
+                    </div>
+                    <p className="text-[10px] opacity-80 leading-tight">
+                      This bespoke color combination will format all generated PDF invoices and quotations.
+                    </p>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddColorModal(false)}
+                      className="px-3.5 py-1.5 border border-bone-border dark:border-obsidian-border text-xs uppercase"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-1.5 bg-carbon text-bone dark:bg-white dark:text-carbon font-bold text-xs uppercase hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all"
+                    >
+                      Save & Activate Palette
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
 
           {/* Studio Brand Info */}
           <div className="p-5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-4">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText,
@@ -42,7 +42,7 @@ import {
   UserAccount,
 } from '@/types';
 import { defaultCatalog, CatalogTemplate } from '@/lib/catalogDefaults';
-import { generateQuotationPDF } from '@/lib/pdfGenerator';
+import { generateQuotationPDF, resolvePDFPalette } from '@/lib/pdfGenerator';
 
 interface QuotationViewProps {
   quotations: Quotation[];
@@ -134,6 +134,23 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
   const [paymentMethod, setPaymentMethod] = useState('UPI / GPay');
   const [paymentNotes, setPaymentNotes] = useState('50% Advance booking confirmation');
   const [paymentTargetQuote, setPaymentTargetQuote] = useState<Quotation | null>(null);
+
+  // Global Escape Key listener to immediately close Edit/Create Quote popup
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showQuoteModal) {
+          setShowQuoteModal(false);
+        } else if (showEnquiryModal) {
+          setShowEnquiryModal(false);
+        } else if (showPaymentModal) {
+          setShowPaymentModal(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showQuoteModal, showEnquiryModal, showPaymentModal]);
 
   const formatINR = (val: number) => {
     if (!currentUser.canViewFinances) return 'Rs *** /-';
@@ -463,10 +480,25 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
             </div>
           </div>
 
-          {/* Right Column: Visual Preview Deck with Independent Scroll (Strictly LUMINA Branding) */}
-          <div className="lg:col-span-7 bg-[#f3f7f4] text-[#0f1714] border-2 border-carbon dark:border-white p-5 lg:p-7 shadow-xl space-y-4 max-h-[calc(100vh-140px)] overflow-y-auto">
-            {/* Header: Pure LUMINA Branding */}
-            <div className="flex items-start justify-between border-b border-[#d8e2dc] pb-3">
+          {/* Right Column: Visual Preview Deck with Independent Scroll (Strictly LUMINA Branding with Active Theme Palette) */}
+          {(() => {
+            const previewPalette = resolvePDFPalette(settings);
+            const previewBg = `rgb(${previewPalette.bg.join(',')})`;
+            const previewText = `rgb(${previewPalette.text.join(',')})`;
+            const previewStrip = `rgb(${previewPalette.strip.join(',')})`;
+            const previewMuted = `rgb(${previewPalette.muted.join(',')})`;
+            const previewAccent = `rgb(${previewPalette.accent.join(',')})`;
+
+            return (
+              <div
+                className="lg:col-span-7 border-2 border-carbon dark:border-white p-5 lg:p-7 shadow-xl space-y-4 max-h-[calc(100vh-140px)] overflow-y-auto"
+                style={{ backgroundColor: previewBg, color: previewText }}
+              >
+                {/* Header: Pure LUMINA Branding */}
+                <div
+                  className="flex items-start justify-between pb-3 border-b"
+                  style={{ borderColor: previewStrip }}
+                >
               <div>
                 <span className="font-serif font-black text-xl tracking-widest uppercase block">
                   {settings.studioName}
@@ -635,6 +667,8 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
               </div>
             </div>
           </div>
+            );
+          })()}
         </div>
       )}
 
