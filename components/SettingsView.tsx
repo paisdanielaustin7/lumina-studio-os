@@ -307,7 +307,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   return (
-    <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6 animate-fadeIn">
+    <div className="p-3.5 sm:p-5 lg:p-8 max-w-7xl mx-auto space-y-5 sm:space-y-6 animate-fadeIn">
       {/* Top Banner Feedback */}
       {isSavedBanner && (
         <motion.div
@@ -322,16 +322,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       )}
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-4 border-b border-bone-border dark:border-obsidian-border">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-3 sm:pb-4 border-b border-bone-border dark:border-obsidian-border">
         <div>
-          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-bone-muted dark:text-obsidian-muted mb-0.5">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[9.5px] sm:text-[10px] font-mono uppercase tracking-[0.2em] text-bone-muted dark:text-obsidian-muted mb-0.5">
             <span>Operating Matrix</span>
             <span>//</span>
             <span className="text-vermillion font-bold">Studio Configurations</span>
-            <span>//</span>
-            <span>{canEdit ? 'DIRECTOR ADMIN ACCESS' : 'VIEWER INSPECTION ACCESS'}</span>
+            <span className="hidden xs:inline">//</span>
+            <span className="hidden xs:inline">{canEdit ? 'DIRECTOR ADMIN' : 'VIEWER'}</span>
           </div>
-          <h1 className="text-2xl md:text-4xl font-serif font-black tracking-tight text-carbon dark:text-white uppercase">
+          <h1 className="text-xl sm:text-2xl md:text-4xl font-serif font-black tracking-tight text-carbon dark:text-white uppercase">
             Studio Settings
           </h1>
         </div>
@@ -356,7 +356,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex flex-wrap gap-1.5 border-b border-bone-border dark:border-obsidian-border pb-2 text-xs font-mono">
+      <div className="flex items-center overflow-x-auto gap-1.5 border-b border-bone-border dark:border-obsidian-border pb-2 text-xs font-mono whitespace-nowrap">
         {[
           { id: 'pdf', label: 'PDF Themes & Studio Info', icon: Palette },
           { id: 'banking', label: 'Banking & Remittance', icon: Landmark },
@@ -369,7 +369,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-3 py-1.5 uppercase tracking-wider flex items-center gap-1.5 border transition-all ${
+              className={`px-3 py-1.5 uppercase tracking-wider flex items-center gap-1.5 border transition-all shrink-0 ${
                 isActive
                   ? 'bg-carbon text-bone dark:bg-white dark:text-carbon font-bold border-carbon dark:border-white'
                   : 'border-transparent text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white'
@@ -386,8 +386,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {activeTab === 'pdf' && (
         <form onSubmit={handleSaveStudioInfo} className="space-y-6 text-xs font-mono">
           {/* PDF Theme Palette Selector */}
-          <div className="p-5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-3">
-            <div className="flex items-center justify-between">
+          <div className="p-4 sm:p-5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
               <div>
                 <h3 className="font-serif text-base font-bold uppercase">PDF Document Theme Palette</h3>
                 <p className="text-[11px] text-bone-muted dark:text-obsidian-muted">
@@ -546,8 +546,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           {/* Add Custom Color Palette Modal */}
           {showAddColorModal && canEdit && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-carbon/80 dark:bg-black/80 backdrop-blur-sm animate-fadeIn">
-              <div className="relative w-full max-w-md bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white shadow-2xl p-6 space-y-4">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-carbon/80 dark:bg-black/80 backdrop-blur-sm animate-fadeIn">
+              <div className="relative w-full max-w-md bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white shadow-2xl p-4 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between pb-3 border-b border-bone-border dark:border-obsidian-border">
                   <div>
                     <span className="text-[10px] font-mono uppercase tracking-widest text-vermillion font-bold block">
@@ -1186,8 +1186,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       {/* Add / Edit User Modal (Admin only) */}
       {isUserModalOpen && canEdit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-carbon/80 dark:bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="relative w-full max-w-lg bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white shadow-2xl p-6 space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-carbon/80 dark:bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-lg bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white shadow-2xl p-4 sm:p-6 space-y-4 sm:space-y-5 max-h-[90vh] overflow-y-auto">
             <div>
               <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-vermillion font-bold mb-1">
                 <ShieldCheck size={12} />

@@ -318,18 +318,18 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
   });
 
   return (
-    <div className="p-4 lg:p-7 max-w-7xl mx-auto space-y-6">
+    <div className="p-3 sm:p-5 lg:p-7 max-w-7xl mx-auto space-y-4 sm:space-y-6">
       {/* Top Header - Compact editorial layout */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-4 border-b border-bone-border dark:border-obsidian-border">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-3 sm:pb-4 border-b border-bone-border dark:border-obsidian-border">
         <div>
-          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-bone-muted dark:text-obsidian-muted mb-0.5">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[9.5px] sm:text-[10px] font-mono uppercase tracking-[0.2em] text-bone-muted dark:text-obsidian-muted mb-0.5">
             <span>Commercial Operations</span>
             <span>//</span>
             <span className="text-vermillion font-bold">LUMINA Quotation Engine</span>
-            <span>//</span>
-            <span>Mangalore Coastal Atelier</span>
+            <span className="hidden xs:inline">//</span>
+            <span className="hidden xs:inline">Mangalore Atelier</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-serif font-black tracking-tight text-carbon dark:text-white uppercase">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-black tracking-tight text-carbon dark:text-white uppercase">
             Quotations & Order Lifecycle
           </h1>
         </div>
@@ -418,9 +418,9 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
       {/* TAB 1: ACTIVE QUOTATIONS & EDITABLE INSPECTOR                              */}
       {/* ========================================================================= */}
       {activeTab === 'quotations' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
           {/* Left Column: Compact Quotation List with Independent Scroll (5 cols) */}
-          <div className="lg:col-span-5 space-y-3 lg:sticky lg:top-2 max-h-[calc(100vh-140px)] flex flex-col">
+          <div className="lg:col-span-5 space-y-3 lg:sticky lg:top-2 max-h-none lg:max-h-[calc(100vh-140px)] flex flex-col">
             <div className="flex items-center justify-between text-[11px] font-mono shrink-0 pb-1">
               <span className="uppercase tracking-widest text-bone-muted dark:text-obsidian-muted">
                 Issued Packages ({filteredQuotes.length})
@@ -437,14 +437,14 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
               </div>
             </div>
 
-            <div className="space-y-2 overflow-y-auto pr-1 flex-1">
+            <div className="space-y-2 max-h-[380px] lg:max-h-none overflow-y-auto pr-1 flex-1">
               {filteredQuotes.map((q) => {
                 const isSelected = selectedQuote.id === q.id;
                 return (
                   <div
                     key={q.id}
                     onClick={() => setSelectedQuote(q)}
-                    className={`p-3.5 border cursor-pointer transition-all ${
+                    className={`p-3 sm:p-3.5 border cursor-pointer transition-all ${
                       isSelected
                         ? 'border-2 border-carbon dark:border-white bg-bone-card dark:bg-obsidian-card shadow-sm'
                         : 'border-bone-border dark:border-obsidian-border bg-bone-card/60 dark:bg-obsidian-card/40 hover:border-carbon dark:hover:border-white'
@@ -491,7 +491,7 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
 
             return (
               <div
-                className="lg:col-span-7 border-2 border-carbon dark:border-white p-5 lg:p-7 shadow-xl space-y-4 max-h-[calc(100vh-140px)] overflow-y-auto"
+                className="lg:col-span-7 border-2 border-carbon dark:border-white p-3.5 sm:p-5 lg:p-7 shadow-xl space-y-4 max-h-none lg:max-h-[calc(100vh-140px)] overflow-visible lg:overflow-y-auto"
                 style={{ backgroundColor: previewBg, color: previewText }}
               >
                 {/* Header: Pure LUMINA Branding */}
@@ -500,10 +500,10 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
                   style={{ borderColor: previewStrip }}
                 >
               <div>
-                <span className="font-serif font-black text-xl tracking-widest uppercase block">
+                <span className="font-serif font-black text-lg sm:text-xl tracking-widest uppercase block">
                   {settings.studioName}
                 </span>
-                <span className="text-[8.5px] font-mono text-[#6e7d76] uppercase tracking-wider block">
+                <span className="text-[8px] sm:text-[8.5px] font-mono text-[#6e7d76] uppercase tracking-wider block">
                   {settings.tagline}
                 </span>
               </div>
@@ -515,7 +515,7 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
 
             {/* Title & Date */}
             <div>
-              <h2 className="font-serif text-3xl lg:text-4xl font-black uppercase tracking-tight">
+              <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-black uppercase tracking-tight">
                 {selectedQuote.packageTitle}
               </h2>
               <p className="text-[11px] font-mono font-bold mt-0.5">Date: {selectedQuote.date}</p>
@@ -1167,11 +1167,11 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
       {/* MODAL 2: CREATE / EDIT QUOTATION MODAL (CASCADES TO ORDERS!)               */}
       {/* ========================================================================= */}
       {showQuoteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-carbon/70 backdrop-blur-sm overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-carbon/70 backdrop-blur-sm overflow-y-auto">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-2xl bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white p-5 sm:p-6 shadow-2xl space-y-4 my-6 max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-2xl bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white p-4 sm:p-6 shadow-2xl space-y-4 my-2 sm:my-6 max-h-[92vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between pb-2 border-b border-bone-border dark:border-obsidian-border">
               <div>

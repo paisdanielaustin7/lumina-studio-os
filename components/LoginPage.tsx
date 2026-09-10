@@ -109,20 +109,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ users, onLoginSuccess }) =
       </header>
 
       {/* Main Authentication Monolith */}
-      <main className="relative z-10 flex-1 flex items-center justify-center p-6 my-4">
+      <main className="relative z-10 flex-1 flex items-center justify-center p-3 sm:p-6 my-2 sm:my-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-lg bg-[#111111] border-2 border-white/20 shadow-2xl p-8 md:p-10 space-y-8"
+          className="w-full max-w-lg bg-[#111111] border-2 border-white/20 shadow-2xl p-5 sm:p-8 md:p-10 space-y-6 sm:space-y-8"
         >
           {/* Identity Header */}
-          <div className="space-y-2 text-left">
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-vermillion font-bold">
+          <div className="space-y-1.5 sm:space-y-2 text-left">
+            <div className="flex items-center gap-2 text-[9.5px] sm:text-[10px] uppercase tracking-[0.3em] text-vermillion font-bold">
               <KeyRound size={13} />
               <span>Restricted Directorial Terminal</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-serif font-black tracking-tight uppercase text-white">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-black tracking-tight uppercase text-white">
               Studio Sign In
             </h1>
             <p className="text-xs text-white/50 leading-relaxed">

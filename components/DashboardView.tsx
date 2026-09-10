@@ -54,33 +54,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   };
 
   return (
-    <div className="space-y-8 p-6 lg:p-10 max-w-7xl mx-auto">
+    <div className="space-y-6 sm:space-y-8 p-3.5 sm:p-6 lg:p-10 max-w-7xl mx-auto">
       {/* Top Editorial Breadcrumb & Status Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-bone-border dark:border-obsidian-border">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 sm:gap-4 pb-4 sm:pb-6 border-b border-bone-border dark:border-obsidian-border">
         <div>
-          <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.25em] text-bone-muted dark:text-obsidian-muted mb-1">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.2em] text-bone-muted dark:text-obsidian-muted mb-1">
             <span>Studio Terminal</span>
             <span>//</span>
             <span className="text-vermillion font-bold">Mangalore Coastal Atelier</span>
-            <span>//</span>
-            <span>Active Session 2026.09</span>
+            <span className="hidden xs:inline">//</span>
+            <span className="hidden xs:inline">Session 2026.09</span>
           </div>
-          <h1 className="text-3xl md:text-5xl font-serif font-black tracking-tight text-carbon dark:text-white uppercase">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-serif font-black tracking-tight text-carbon dark:text-white uppercase">
             Master Directoire
           </h1>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <button
             onClick={() => onNavigate('calendar')}
-            className="px-4 py-2.5 text-xs font-mono uppercase tracking-widest bg-carbon text-bone dark:bg-white dark:text-carbon hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-xs font-mono uppercase tracking-widest bg-carbon text-bone dark:bg-white dark:text-carbon hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all flex items-center gap-1.5 sm:gap-2"
           >
             <Calendar size={13} />
             <span>Open Calendar</span>
           </button>
           <button
             onClick={() => onNavigate('ledger')}
-            className="px-4 py-2.5 text-xs font-mono uppercase tracking-widest border border-bone-border dark:border-obsidian-border hover:border-carbon dark:hover:border-white transition-all flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-xs font-mono uppercase tracking-widest border border-bone-border dark:border-obsidian-border hover:border-carbon dark:hover:border-white transition-all flex items-center gap-1.5 sm:gap-2"
           >
             <Layers size={13} />
             <span>Dual Ledger</span>
@@ -392,7 +392,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           {/* Ledger Table */}
           <div className="border border-bone-border dark:border-obsidian-border bg-bone-card dark:bg-obsidian-card overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse min-w-[560px]">
                 <thead>
                   <tr className="border-b border-bone-border dark:border-obsidian-border bg-bone-surface/70 dark:bg-obsidian-surface/80 text-[10px] font-mono uppercase tracking-widest text-bone-muted dark:text-obsidian-muted">
                     <th className="py-3 px-4">Ref & Date</th>

@@ -91,26 +91,26 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   };
 
   return (
-    <div className="p-6 lg:p-10 max-w-7xl mx-auto relative">
+    <div className="p-3.5 sm:p-6 lg:p-10 max-w-7xl mx-auto relative space-y-4 sm:space-y-6">
       {/* Calendar Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-bone-border dark:border-obsidian-border">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 sm:gap-4 pb-4 sm:pb-6 border-b border-bone-border dark:border-obsidian-border">
         <div>
-          <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.25em] text-bone-muted dark:text-obsidian-muted mb-1">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.25em] text-bone-muted dark:text-obsidian-muted mb-1">
             <span>Production Matrix</span>
             <span>//</span>
             <span className="text-vermillion font-bold">Confirmed Call Sheets</span>
           </div>
-          <h1 className="text-3xl md:text-5xl font-serif font-black tracking-tight text-carbon dark:text-white uppercase">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-serif font-black tracking-tight text-carbon dark:text-white uppercase">
             {currentMonth}
           </h1>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* Filter Shoot Type */}
-          <div className="flex items-center border border-bone-border dark:border-obsidian-border text-[11px] font-mono">
+          <div className="flex items-center border border-bone-border dark:border-obsidian-border text-[10px] sm:text-[11px] font-mono">
             <button
               onClick={() => setActiveFilter('ALL')}
-              className={`px-3 py-1.5 uppercase tracking-wider transition-colors ${
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 uppercase tracking-wider transition-colors ${
                 activeFilter === 'ALL'
                   ? 'bg-carbon text-bone dark:bg-white dark:text-carbon font-bold'
                   : 'text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white'
@@ -120,7 +120,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             </button>
             <button
               onClick={() => setActiveFilter('Haute Couture Editorial')}
-              className={`px-3 py-1.5 uppercase tracking-wider transition-colors border-l border-bone-border dark:border-obsidian-border ${
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 uppercase tracking-wider transition-colors border-l border-bone-border dark:border-obsidian-border ${
                 activeFilter === 'Haute Couture Editorial'
                   ? 'bg-carbon text-bone dark:bg-white dark:text-carbon font-bold'
                   : 'text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white'
@@ -130,7 +130,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             </button>
             <button
               onClick={() => setActiveFilter('High Jewelry Lookbook')}
-              className={`px-3 py-1.5 uppercase tracking-wider transition-colors border-l border-bone-border dark:border-obsidian-border ${
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 uppercase tracking-wider transition-colors border-l border-bone-border dark:border-obsidian-border ${
                 activeFilter === 'High Jewelry Lookbook'
                   ? 'bg-carbon text-bone dark:bg-white dark:text-carbon font-bold'
                   : 'text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white'
@@ -142,16 +142,16 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
           <div className="flex items-center border border-bone-border dark:border-obsidian-border">
             <button
-              className="p-2 text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white hover:bg-bone-surface dark:hover:bg-obsidian-surface transition-colors"
+              className="p-1.5 sm:p-2 text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white hover:bg-bone-surface dark:hover:bg-obsidian-surface transition-colors"
               aria-label="Previous Month"
             >
               <ChevronLeft size={16} />
             </button>
-            <span className="px-3 text-xs font-mono font-bold tracking-widest text-carbon dark:text-white">
+            <span className="px-2.5 sm:px-3 text-[11px] sm:text-xs font-mono font-bold tracking-widest text-carbon dark:text-white">
               SEP 26
             </span>
             <button
-              className="p-2 text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white hover:bg-bone-surface dark:hover:bg-obsidian-surface transition-colors"
+              className="p-1.5 sm:p-2 text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white hover:bg-bone-surface dark:hover:bg-obsidian-surface transition-colors"
               aria-label="Next Month"
             >
               <ChevronRight size={16} />
@@ -160,23 +160,32 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </div>
       </div>
 
-      {/* Weekday Headers */}
-      <div className="grid grid-cols-7 border-b border-l border-bone-border dark:border-obsidian-border bg-bone-surface dark:bg-obsidian-surface mt-6">
-        {daysOfWeek.map((day) => (
-          <div
-            key={day}
-            className="py-2.5 text-center font-mono text-[11px] font-bold uppercase tracking-[0.2em] border-r border-bone-border dark:border-obsidian-border text-bone-muted dark:text-obsidian-muted"
-          >
-            {day}
-          </div>
-        ))}
+      {/* Mobile Swipe Hint */}
+      <div className="flex items-center justify-between sm:hidden text-[10px] font-mono text-bone-muted dark:text-obsidian-muted pt-1">
+        <span>Calendar Roster</span>
+        <span>Swipe horizontally ↔</span>
       </div>
 
-      {/* Bespoke Day Cells Grid */}
-      <div className="grid grid-cols-7 border-l border-t border-bone-border dark:border-obsidian-border bg-bone-card dark:bg-obsidian-card">
-        {calendarCells.map((cell, idx) => {
-          const dayShoots = getShootsForDate(cell.dateStr);
-          const isToday = cell.dateStr === '2026-09-10';
+      {/* Calendar Scroll Wrapper for Mobile Viewports */}
+      <div className="overflow-x-auto border border-bone-border dark:border-obsidian-border -mx-3.5 sm:mx-0">
+        <div className="min-w-[620px]">
+          {/* Weekday Headers */}
+          <div className="grid grid-cols-7 border-b border-bone-border dark:border-obsidian-border bg-bone-surface dark:bg-obsidian-surface">
+            {daysOfWeek.map((day) => (
+              <div
+                key={day}
+                className="py-2.5 text-center font-mono text-[11px] font-bold uppercase tracking-[0.2em] border-r border-bone-border dark:border-obsidian-border text-bone-muted dark:text-obsidian-muted last:border-r-0"
+              >
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Bespoke Day Cells Grid */}
+          <div className="grid grid-cols-7 bg-bone-card dark:bg-obsidian-card">
+            {calendarCells.map((cell, idx) => {
+              const dayShoots = getShootsForDate(cell.dateStr);
+              const isToday = cell.dateStr === '2026-09-10';
 
           return (
             <div
@@ -237,6 +246,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             </div>
           );
         })}
+          </div>
+        </div>
       </div>
 
       {/* Slide-in Shoot Inspector Drawer */}
@@ -261,10 +272,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               className="fixed top-0 right-0 bottom-0 w-full max-w-2xl bg-bone-card dark:bg-obsidian-surface border-l border-bone-border dark:border-obsidian-border z-50 overflow-y-auto shadow-2xl flex flex-col"
             >
               {/* Drawer Top Header */}
-              <div className="p-6 border-b border-bone-border dark:border-obsidian-border flex items-center justify-between sticky top-0 bg-bone-card dark:bg-obsidian-surface z-10">
+              <div className="p-4 sm:p-6 border-b border-bone-border dark:border-obsidian-border flex items-center justify-between sticky top-0 bg-bone-card dark:bg-obsidian-surface z-10">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 bg-vermillion" />
-                  <span className="text-xs font-mono uppercase tracking-[0.25em] text-bone-muted dark:text-obsidian-muted">
+                  <span className="text-xs font-mono uppercase tracking-[0.25em] text-bone-muted dark:text-obsidian-muted truncate max-w-[220px] sm:max-w-none">
                     Call Sheet Dossier // {selectedShoot.shootCode}
                   </span>
                 </div>
@@ -278,7 +289,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               </div>
 
               {/* Drawer Content */}
-              <div className="p-6 lg:p-8 space-y-8 flex-1">
+              <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 flex-1">
                 {/* Title & Type */}
                 <div>
                   <div className="inline-block px-2.5 py-1 mb-3 text-[10px] font-mono font-bold uppercase tracking-widest bg-carbon text-bone dark:bg-white dark:text-carbon">

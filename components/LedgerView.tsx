@@ -191,18 +191,18 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
   }
 
   return (
-    <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
+    <div className="p-3.5 sm:p-6 lg:p-10 max-w-7xl mx-auto space-y-5 sm:space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-bone-border dark:border-obsidian-border">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 sm:gap-4 pb-4 sm:pb-6 border-b border-bone-border dark:border-obsidian-border">
         <div>
-          <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.25em] text-bone-muted dark:text-obsidian-muted mb-1">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.25em] text-bone-muted dark:text-obsidian-muted mb-1">
             <span>Treasury & Audit</span>
             <span>//</span>
             <span className="text-vermillion font-bold">Dual Entry General Ledger</span>
-            <span>//</span>
-            <span>{canEditLedger ? 'EDIT ACCESS GRANTED' : 'READ-ONLY ACCESS'}</span>
+            <span className="hidden xs:inline">//</span>
+            <span className="hidden xs:inline">{canEditLedger ? 'EDIT ACCESS' : 'READ-ONLY'}</span>
           </div>
-          <h1 className="text-3xl md:text-5xl font-serif font-black tracking-tight text-carbon dark:text-white uppercase">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-serif font-black tracking-tight text-carbon dark:text-white uppercase">
             Studio Ledger
           </h1>
         </div>
@@ -211,7 +211,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
           {canEditLedger && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2.5 text-xs font-mono uppercase tracking-widest bg-carbon text-bone dark:bg-white dark:text-carbon hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all flex items-center gap-2 font-bold"
+              className="px-3 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-xs font-mono uppercase tracking-widest bg-carbon text-bone dark:bg-white dark:text-carbon hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all flex items-center gap-1.5 sm:gap-2 font-bold"
             >
               <Plus size={14} />
               <span>Record Transaction</span>
@@ -221,30 +221,30 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
       </div>
 
       {/* Financial Summary Banner */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="p-4 sm:p-5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border">
           <span className="text-[10px] font-mono uppercase tracking-widest text-bone-muted dark:text-obsidian-muted block">
             Total Receivables Cleared
           </span>
-          <span className="text-2xl lg:text-3xl font-serif font-bold text-green-600 dark:text-green-400 mt-1 block">
+          <span className="text-xl sm:text-2xl lg:text-3xl font-serif font-bold text-green-600 dark:text-green-400 mt-1 block">
             +{formatCurrency(totalIncome)}
           </span>
         </div>
 
-        <div className="p-5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border">
+        <div className="p-4 sm:p-5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border">
           <span className="text-[10px] font-mono uppercase tracking-widest text-bone-muted dark:text-obsidian-muted block">
             Total Production & Gear Expenses
           </span>
-          <span className="text-2xl lg:text-3xl font-serif font-bold text-carbon dark:text-white mt-1 block">
+          <span className="text-xl sm:text-2xl lg:text-3xl font-serif font-bold text-carbon dark:text-white mt-1 block">
             -{formatCurrency(totalExpense)}
           </span>
         </div>
 
-        <div className="p-5 bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white">
+        <div className="p-4 sm:p-5 bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white">
           <span className="text-[10px] font-mono uppercase tracking-widest text-vermillion font-bold block">
             Net Studio Operating Margin
           </span>
-          <span className="text-2xl lg:text-3xl font-serif font-bold text-carbon dark:text-white mt-1 block">
+          <span className="text-xl sm:text-2xl lg:text-3xl font-serif font-bold text-carbon dark:text-white mt-1 block">
             {formatCurrency(netBalance)}
           </span>
         </div>
@@ -291,7 +291,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
       {/* Ledger Table */}
       <div className="border border-bone-border dark:border-obsidian-border bg-bone-card dark:bg-obsidian-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[620px]">
             <thead>
               <tr className="border-b border-bone-border dark:border-obsidian-border bg-bone-surface/70 dark:bg-obsidian-surface/80 text-[10px] font-mono uppercase tracking-widest text-bone-muted dark:text-obsidian-muted">
                 <th className="py-3 px-4">Transaction Ref</th>
@@ -371,11 +371,11 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
 
       {/* Record Transaction Modal */}
       {showAddModal && canEditLedger && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white p-6 max-w-md w-full shadow-2xl"
+            className="bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white p-4 sm:p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between pb-4 border-b border-bone-border dark:border-obsidian-border mb-4">
               <h2 className="font-serif text-xl font-bold uppercase text-carbon dark:text-white">
@@ -495,11 +495,11 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
 
       {/* Edit Transaction Modal */}
       {editingEntry && canEditLedger && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white p-6 max-w-md w-full shadow-2xl"
+            className="bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white p-4 sm:p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between pb-4 border-b border-bone-border dark:border-obsidian-border mb-4">
               <div>

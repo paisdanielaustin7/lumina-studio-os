@@ -26,23 +26,23 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({ invoices, settings, 
   };
 
   return (
-    <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
+    <div className="p-3.5 sm:p-6 lg:p-10 max-w-7xl mx-auto space-y-6 sm:space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-bone-border dark:border-obsidian-border">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 sm:gap-4 pb-4 sm:pb-6 border-b border-bone-border dark:border-obsidian-border">
         <div>
-          <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.25em] text-bone-muted dark:text-obsidian-muted mb-1">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.25em] text-bone-muted dark:text-obsidian-muted mb-1">
             <span>Commercial Finance</span>
             <span>//</span>
             <span className="text-vermillion font-bold">Client Retainers & Settlement</span>
           </div>
-          <h1 className="text-3xl md:text-5xl font-serif font-black tracking-tight text-carbon dark:text-white uppercase">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-serif font-black tracking-tight text-carbon dark:text-white uppercase">
             Billing & Invoices
           </h1>
         </div>
 
         <button
           onClick={() => alert('New invoice draft initialised.')}
-          className="px-4 py-2.5 text-xs font-mono uppercase tracking-widest bg-carbon text-bone dark:bg-white dark:text-carbon hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all flex items-center gap-2"
+          className="px-3 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-xs font-mono uppercase tracking-widest bg-carbon text-bone dark:bg-white dark:text-carbon hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all flex items-center gap-1.5 sm:gap-2"
         >
           <FileText size={14} />
           <span>Draft New Invoice</span>
@@ -50,7 +50,7 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({ invoices, settings, 
       </div>
 
       {/* Grid: Invoice List (Left) + Detailed Invoice Inspector (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-start">
         {/* Invoices List */}
         <div className="lg:col-span-5 space-y-3">
           <span className="text-xs font-mono uppercase tracking-widest text-bone-muted dark:text-obsidian-muted block">
@@ -99,7 +99,7 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({ invoices, settings, 
         </div>
 
         {/* Selected Invoice Details Deck */}
-        <div className="lg:col-span-7 bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white p-6 lg:p-8 space-y-6">
+        <div className="lg:col-span-7 bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
           <div className="flex items-start justify-between border-b border-bone-border dark:border-obsidian-border pb-5">
             <div>
               <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-vermillion font-bold block mb-1">

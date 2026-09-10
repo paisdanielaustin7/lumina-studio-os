@@ -19,6 +19,7 @@ import {
   Camera,
   KeyRound,
   LogOut,
+  X,
 } from 'lucide-react';
 import { ViewModule, UserRole, UserAccount } from '@/types';
 import { useTheme } from './ThemeContext';
@@ -33,6 +34,8 @@ interface SidebarProps {
   currentUser: UserAccount;
   onOpenLoginModal: () => void;
   onLogout: () => void;
+  isMobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -43,6 +46,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentUser,
   onOpenLoginModal,
   onLogout,
+  isMobileOpen = false,
+  onMobileClose,
 }) => {
   const { theme, toggleTheme } = useTheme();
 
@@ -65,13 +70,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
   });
 
   return (
-    <motion.aside
-      animate={{ width: isCollapsed ? 68 : 260 }}
-      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className="relative flex flex-col h-screen shrink-0 z-40 bg-bone-card dark:bg-obsidian-surface border-r border-bone-border dark:border-obsidian-border select-none"
-    >
-      {/* Top Header / Studio Brand Logo */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-bone-border dark:border-obsidian-border">
+    <>
+      {/* Mobile Drawer Backdrop */}
+      <AnimatePresence>
+        {isMobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onMobileClose}
+            className="fixed inset-0 bg-black/70 backdrop-blur-xs z-40 md:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      <motion.aside
+        animate={{ width: isCollapsed ? 68 : 260 }}
+        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        className={`fixed md:relative inset-y-0 left-0 flex flex-col h-screen shrink-0 z-50 bg-bone-card dark:bg-obsidian-surface border-r border-bone-border dark:border-obsidian-border select-none transition-transform md:translate-x-0 ${
+          isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
+        {/* Top Header / Studio Brand Logo */}
+        <div className="h-16 flex items-center justify-between px-4 border-b border-bone-border dark:border-obsidian-border">
         <Link href="/" className="flex items-center gap-2.5 overflow-hidden group">
           <div className="w-8 h-8 shrink-0 flex items-center justify-center bg-carbon dark:bg-white text-bone dark:text-obsidian font-serif font-black text-base tracking-widest transition-transform group-hover:scale-105">
             L
@@ -96,15 +117,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </AnimatePresence>
         </Link>
 
-        {/* Collapse Toggle Button */}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="hidden md:flex items-center justify-center w-6 h-6 rounded border border-bone-border dark:border-obsidian-border text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white hover:border-carbon dark:hover:border-white transition-colors"
-          title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-          aria-label="Toggle Sidebar"
-        >
-          {isCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
-        </button>
+        {/* Collapse Toggle Button (Desktop) & Close Button (Mobile) */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="hidden md:flex items-center justify-center w-6 h-6 rounded border border-bone-border dark:border-obsidian-border text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white hover:border-carbon dark:hover:border-white transition-colors"
+            title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+            aria-label="Toggle Sidebar"
+          >
+            {isCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+          </button>
+          <button
+            onClick={onMobileClose}
+            className="md:hidden flex items-center justify-center w-8 h-8 rounded border border-bone-border dark:border-obsidian-border text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white hover:border-carbon dark:hover:border-white transition-colors"
+            title="Close Menu"
+            aria-label="Close Mobile Navigation"
+          >
+            <X size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Public View Quick-Launcher */}
@@ -112,7 +143,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <Link
           href="/about"
           target="_blank"
-          rel="noopener noreferrer"
+          onClick={() => {
+            if (onMobileClose) onMobileClose();
+          }}
           className={`flex items-center justify-between group p-2 rounded text-[11px] font-mono uppercase tracking-wider transition-all ${
             isCollapsed
               ? 'justify-center bg-carbon/5 dark:bg-white/5 hover:bg-vermillion hover:text-white'
@@ -150,7 +183,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           return (
             <button
               key={item.id}
-              onClick={() => onSelectModule(item.id)}
+              onClick={() => {
+                onSelectModule(item.id);
+                if (onMobileClose) onMobileClose();
+              }}
               className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 text-[11px] font-mono uppercase tracking-wider transition-all relative group ${
                 isActive
                   ? 'bg-carbon text-bone dark:bg-obsidian-card dark:text-white font-bold'
@@ -263,5 +299,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
     </motion.aside>
-  );
+  </>
+);
 };

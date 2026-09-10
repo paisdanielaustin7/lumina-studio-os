@@ -221,17 +221,17 @@ export const MasterSearchModal: React.FC<MasterSearchModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-      <div className="relative w-full max-w-2xl bg-bone-card dark:bg-[#121212] border-2 border-carbon dark:border-white shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 sm:pt-20 p-2.5 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+      <div className="relative w-full max-w-2xl bg-bone-card dark:bg-[#121212] border-2 border-carbon dark:border-white shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
         {/* Search Input Bar */}
-        <div className="p-4 border-b border-bone-border dark:border-white/10 flex items-center gap-3">
-          <Search size={18} className="text-vermillion shrink-0" />
+        <div className="p-3 sm:p-4 border-b border-bone-border dark:border-white/10 flex items-center gap-2.5 sm:gap-3">
+          <Search size={16} className="text-vermillion shrink-0" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type any keyword (e.g. Rosario, Pooja, Q NO. 07, INV-2026, Hasselblad, advance)..."
+            placeholder="Search client, quote, inv, ledger, crew..."
             className="w-full bg-transparent text-sm md:text-base font-mono outline-none text-carbon dark:text-white placeholder:text-bone-muted dark:placeholder:text-white/40"
           />
           {query && (

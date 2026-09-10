@@ -46,6 +46,7 @@ import {
   Users,
   LogOut,
   Search,
+  Menu,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -61,6 +62,7 @@ export default function StudioOSHome() {
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isMasterSearchOpen, setIsMasterSearchOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   // Synced Live State across all modules
@@ -540,32 +542,45 @@ export default function StudioOSHome() {
         currentUser={currentUser}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
         onLogout={handleLogout}
+        isMobileOpen={isMobileSidebarOpen}
+        onMobileClose={() => setIsMobileSidebarOpen(false)}
       />
 
       {/* Main Studio Viewport */}
       <main className="flex-1 h-screen overflow-y-auto relative flex flex-col">
-        {/* Subtle Top Status Bar with Master Search and Logout Action */}
-        <div className="h-10 px-6 border-b border-bone-border dark:border-obsidian-border flex items-center justify-between text-[11px] font-mono shrink-0 bg-bone-surface/60 dark:bg-obsidian-surface/60">
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400 font-bold">
+        {/* Subtle Top Status Bar with Master Search, Mobile Menu Hamburger and Logout Action */}
+        <div className="h-12 md:h-10 px-3 sm:px-6 border-b border-bone-border dark:border-obsidian-border flex items-center justify-between text-[11px] font-mono shrink-0 bg-bone-surface/80 dark:bg-obsidian-surface/80 backdrop-blur-xs">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Mobile Hamburger Drawer Toggle */}
+            <button
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="md:hidden p-1.5 -ml-1 text-carbon dark:text-white hover:bg-carbon/5 dark:hover:bg-white/10 rounded transition-colors flex items-center justify-center"
+              aria-label="Open Navigation Menu"
+              title="Open Menu"
+            >
+              <Menu size={18} />
+            </button>
+
+            <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400 font-bold text-[10px] sm:text-[11px]">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping" />
-              ENGINE ONLINE
+              <span className="hidden xs:inline">ENGINE</span> ONLINE
             </span>
-            <span className="text-bone-muted dark:text-obsidian-muted hidden sm:inline">
+            <span className="text-bone-muted dark:text-obsidian-muted hidden md:inline truncate max-w-xs lg:max-w-md">
               // ACTIVE IDENTITY: {currentUser.fullName} (@{currentUser.username}) [
               {currentUser.role === 'ADMIN_DIRECTOR' ? 'ROOT DIRECTOR' : 'RESTRICTED CREW'}]
             </span>
           </div>
 
-          <div className="flex items-center gap-3 text-bone-muted dark:text-obsidian-muted">
+          <div className="flex items-center gap-2 sm:gap-3 text-bone-muted dark:text-obsidian-muted">
             {/* Global Master Search Quick-Button */}
             <button
               onClick={() => setIsMasterSearchOpen(true)}
-              className="px-2.5 py-1 text-[10px] uppercase font-mono tracking-wider border border-bone-border dark:border-obsidian-border hover:border-carbon dark:hover:border-white text-carbon dark:text-white flex items-center gap-1.5 transition-all bg-bone-card/50 dark:bg-obsidian-card/50"
+              className="px-2 sm:px-2.5 py-1 text-[10px] uppercase font-mono tracking-wider border border-bone-border dark:border-obsidian-border hover:border-carbon dark:hover:border-white text-carbon dark:text-white flex items-center gap-1 sm:gap-1.5 transition-all bg-bone-card/50 dark:bg-obsidian-card/50 shrink-0"
               title="Search all records (Ctrl+K)"
             >
               <Search size={11} className="text-vermillion" />
-              <span>Master Search</span>
+              <span className="hidden xs:inline">Master</span>
+              <span>Search</span>
               <kbd className="hidden sm:inline-block px-1 py-0.2 bg-carbon/10 dark:bg-white/10 text-[9px] font-mono">
                 Ctrl+K
               </kbd>
@@ -574,7 +589,7 @@ export default function StudioOSHome() {
             {/* Prominent Logout Button */}
             <button
               onClick={handleLogout}
-              className="text-xs uppercase font-mono tracking-wider text-vermillion hover:text-white hover:bg-vermillion border border-vermillion/40 px-2.5 py-0.5 transition-all flex items-center gap-1.5 font-bold"
+              className="text-[10px] sm:text-xs uppercase font-mono tracking-wider text-vermillion hover:text-white hover:bg-vermillion border border-vermillion/40 px-2 sm:px-2.5 py-1 sm:py-0.5 transition-all flex items-center gap-1 sm:gap-1.5 font-bold shrink-0"
               title="Exit session and lock system"
             >
               <LogOut size={12} />
@@ -586,7 +601,7 @@ export default function StudioOSHome() {
             </span>
             <Link
               href="/about"
-              className="text-carbon dark:text-white hover:text-vermillion dark:hover:text-vermillion transition-colors flex items-center gap-1 uppercase font-bold"
+              className="hidden sm:flex text-carbon dark:text-white hover:text-vermillion dark:hover:text-vermillion transition-colors items-center gap-1 uppercase font-bold text-[10px] sm:text-xs"
             >
               <span>Public Deck</span>
               <ExternalLink size={10} />
