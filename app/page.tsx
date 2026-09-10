@@ -6,13 +6,26 @@ import { DashboardView } from '@/components/DashboardView';
 import { CalendarView } from '@/components/CalendarView';
 import { LedgerView } from '@/components/LedgerView';
 import { InvoicesView } from '@/components/InvoicesView';
+import { QuotationView } from '@/components/QuotationView';
 import {
   mockKPISummary,
   mockShoots,
   mockLedger,
   mockInvoices,
+  mockQuotations,
+  mockEnquiries,
 } from '@/lib/mockData';
-import { ViewModule, UserRole, ShootBooking } from '@/types';
+import {
+  ViewModule,
+  UserRole,
+  ShootBooking,
+  Quotation,
+  Enquiry,
+  Invoice,
+  LedgerEntry,
+  KPISummary,
+  DeliveryStage,
+} from '@/types';
 import {
   Shield,
   ShieldCheck,
@@ -32,11 +45,245 @@ export default function StudioOSHome() {
   const [userRole, setUserRole] = useState<UserRole>('ADMIN_DIRECTOR');
   const [selectedShoot, setSelectedShoot] = useState<ShootBooking | null>(null);
 
+  // Synced Live State across all modules
+  const [quotations, setQuotations] = useState<Quotation[]>(mockQuotations);
+  const [enquiries, setEnquiries] = useState<Enquiry[]>(mockEnquiries);
+  const [bookings, setBookings] = useState<ShootBooking[]>(mockShoots);
+  const [ledger, setLedger] = useState<LedgerEntry[]>(mockLedger);
+  const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
+  const [kpi, setKpi] = useState<KPISummary>(mockKPISummary);
+
   const handleSelectShoot = (shoot: ShootBooking | null) => {
     setSelectedShoot(shoot);
     if (shoot) {
       setActiveModule('calendar');
     }
+  };
+
+  // 1. Add new quotation
+  const handleAddQuotation = (quote: Quotation) => {
+    setQuotations([quote, ...quotations]);
+  };
+
+  // 2. Update quotation
+  const handleUpdateQuotation = (quote: Quotation) => {
+    setQuotations(quotations.map((q) => (q.id === quote.id ? quote : q)));
+  };
+
+  // 3. Add new client enquiry
+  const handleAddEnquiry = (enquiry: Enquiry) => {
+    setEnquiries([enquiry, ...enquiries]);
+  };
+
+  // 4. One-Click Conversion: Quotation -> Confirmed Booking / Order
+  const handleConvertQuotationToBooking = (quote: Quotation) => {
+    // Update quotation status
+    const updatedQuote: Quotation = {
+      ...quote,
+      status: 'CONVERTED',
+    };
+    handleUpdateQuotation(updatedQuote);
+
+    // If enquiry linked, mark enquiry as CONVERTED
+    if (quote.enquiryId) {
+      setEnquiries(
+        enquiries.map((e) =>
+          e.id === quote.enquiryId ? { ...e, status: 'CONVERTED' } : e
+        )
+      );
+    }
+
+    const code = `LUM-MNG-${Math.floor(10 + Math.random() * 89)}`;
+    const advance = (quote.totalPrice * quote.advancePercentage) / 100;
+    const balance = quote.totalPrice - advance;
+
+    // Create confirmed ShootBooking
+    const newBooking: ShootBooking = {
+      id: `sht-${Date.now()}`,
+      shootCode: code,
+      title: `${quote.clientName}: ${quote.packageTitle}`,
+      client: {
+        id: `cli-${Date.now()}`,
+        name: quote.clientName,
+        company: quote.clientName,
+        brandTier: 'HAUTE_COUTURE',
+        email: quote.clientEmail || 'client@lumina.in',
+        phone: quote.clientPhone,
+        city: quote.clientCity,
+        totalBilled: quote.totalPrice,
+        totalPaid: advance,
+        status: 'ACTIVE',
+      },
+      type: 'Haute Couture Editorial',
+      status: 'CONFIRMED',
+      date: '2026-11-20',
+      startTime: '06:00',
+      endTime: '19:30',
+      callTime: '05:30 AM (Set Call)',
+      location: {
+        name: `${quote.clientCity} Coastal Venue & Heritage Set`,
+        city: quote.clientCity,
+        coordinates: '12.9141° N, 74.8560° E',
+        accessCode: 'COAST-GATE-26',
+      },
+      productionTeam: [
+        { role: 'Studio Director & Lead Camera', name: 'Dan Aurel', initials: 'DA' },
+        { role: 'First Camera Assistant', name: 'Roshan D’Silva', initials: 'RD' },
+        { role: 'Digital Imaging Technician (DIT)', name: 'Farooq Mansoor', initials: 'FM' },
+      ],
+      shotListTotal: 25,
+      shotListCompleted: 0,
+      financialSummary: {
+        totalFee: quote.totalPrice,
+        retainerPaid: advance,
+        balanceDue: balance,
+        currency: 'INR',
+      },
+      scheduleTimeline: [
+        { time: '05:30', activity: 'Grip & Tethering Setup', lead: 'Farooq Mansoor' },
+        { time: '06:30', activity: 'Traditional Draping & Kasavu Portraits', lead: 'Dan Aurel' },
+        { time: '16:00', activity: 'Sunset Coastal & Drone Cinema Flight', lead: 'Dan Aurel' },
+        { time: '19:30', activity: 'Wrap & Dual NVMe RAW Ingest Verification', lead: 'Farooq Mansoor' },
+      ],
+      gearAllocated: [
+        'Hasselblad H6D-100c Medium Format',
+        'Phase One IQ4 150MP Achromatic Back',
+        'Profoto Pro-11 Studio Flash Generators',
+      ],
+      editorialNotes: 'Converted from Quotation ' + quote.quotationNumber,
+      quotationId: quote.id,
+      deliveryStage: 'RAW_INGESTED',
+      hardDriveReceived: false,
+      clientSelectionDone: false,
+    };
+
+    setBookings([newBooking, ...bookings]);
+
+    // Also auto-generate matching Invoice
+    const newInvoice: Invoice = {
+      id: `inv-${Date.now()}`,
+      invoiceNumber: `INV-2026-0${Math.floor(100 + Math.random() * 899)}`,
+      clientId: newBooking.client.id,
+      clientName: quote.clientName,
+      brand: quote.packageTitle,
+      issueDate: new Date().toISOString().split('T')[0],
+      dueDate: '2026-11-20',
+      items: [
+        {
+          id: 'item-1',
+          description: `${quote.packageTitle} Coverage & High-Res Plates`,
+          quantity: 1,
+          unitPrice: quote.totalPrice,
+          total: quote.totalPrice,
+        },
+      ],
+      subtotal: quote.totalPrice,
+      productionFeeTax: 0,
+      totalAmount: quote.totalPrice,
+      balanceDue: balance,
+      status: balance === 0 ? 'PAID' : advance > 0 ? 'PARTIAL' : 'UNPAID',
+    };
+
+    setInvoices([newInvoice, ...invoices]);
+
+    alert(`Order ${code} created successfully! Added to Calendar and Invoices.`);
+  };
+
+  // 5. Synced Payment Entry Engine (Updates Order + Invoice + Dual General Ledger + KPI Vault)
+  const handleRecordPayment = (payment: {
+    reference: string;
+    amount: number;
+    paymentMethod: string;
+    relatedShootCode?: string;
+    clientName: string;
+    notes?: string;
+  }) => {
+    // A. Add to Live Dual Ledger
+    const newLedgerEntry: LedgerEntry = {
+      id: `led-${Date.now()}`,
+      transactionRef: payment.reference,
+      date: new Date().toISOString().split('T')[0],
+      description: `Client Payment: ${payment.clientName} (${payment.notes || 'Settlement'})`,
+      category: 'CLIENT_RECEIVABLE',
+      type: 'INCOME',
+      amount: payment.amount,
+      counterparty: payment.clientName,
+      relatedShootCode: payment.relatedShootCode,
+      status: 'CLEARED',
+      paymentMethod: payment.paymentMethod,
+    };
+    setLedger([newLedgerEntry, ...ledger]);
+
+    // B. Update Matching Booking (Order)
+    setBookings(
+      bookings.map((b) => {
+        if (
+          b.client.name.toLowerCase() === payment.clientName.toLowerCase() ||
+          b.shootCode === payment.relatedShootCode
+        ) {
+          const newPaid = b.financialSummary.retainerPaid + payment.amount;
+          const newBal = Math.max(0, b.financialSummary.totalFee - newPaid);
+          return {
+            ...b,
+            financialSummary: {
+              ...b.financialSummary,
+              retainerPaid: newPaid,
+              balanceDue: newBal,
+            },
+          };
+        }
+        return b;
+      })
+    );
+
+    // C. Update Matching Invoice
+    setInvoices(
+      invoices.map((inv) => {
+        if (inv.clientName.toLowerCase() === payment.clientName.toLowerCase()) {
+          const newBal = Math.max(0, inv.balanceDue - payment.amount);
+          return {
+            ...inv,
+            balanceDue: newBal,
+            status: newBal === 0 ? 'PAID' : 'PARTIAL',
+          };
+        }
+        return inv;
+      })
+    );
+
+    // D. Update Studio KPI Vault
+    setKpi({
+      ...kpi,
+      cashFlow: {
+        ...kpi.cashFlow,
+        current: kpi.cashFlow.current + payment.amount,
+        monthInflow: kpi.cashFlow.monthInflow + payment.amount,
+      },
+      unpaidRetainers: {
+        ...kpi.unpaidRetainers,
+        total: Math.max(0, kpi.unpaidRetainers.total - payment.amount),
+      },
+    });
+
+    alert(
+      `Payment of Rs ${payment.amount.toLocaleString(
+        'en-IN'
+      )} recorded and synced to General Ledger, Order, and Invoices!`
+    );
+  };
+
+  // 6. Update Delivery Milestones
+  const handleUpdateBookingDelivery = (
+    bookingId: string,
+    updates: {
+      deliveryStage?: DeliveryStage;
+      hardDriveReceived?: boolean;
+      clientSelectionDone?: boolean;
+    }
+  ) => {
+    setBookings(
+      bookings.map((b) => (b.id === bookingId ? { ...b, ...updates } : b))
+    );
   };
 
   return (
@@ -77,32 +324,47 @@ export default function StudioOSHome() {
           </div>
         </div>
 
-        {/* Dynamic Views */}
+        {/* Dynamic Operating Modules */}
         <div className="flex-1 pb-16">
           {activeModule === 'overview' && (
             <DashboardView
-              kpi={mockKPISummary}
-              shoots={mockShoots}
-              ledger={mockLedger}
+              kpi={kpi}
+              shoots={bookings}
+              ledger={ledger}
               onNavigate={setActiveModule}
               onSelectShoot={handleSelectShoot}
             />
           )}
 
+          {activeModule === 'quotations' && (
+            <QuotationView
+              quotations={quotations}
+              enquiries={enquiries}
+              bookings={bookings}
+              invoices={invoices}
+              onAddQuotation={handleAddQuotation}
+              onUpdateQuotation={handleUpdateQuotation}
+              onAddEnquiry={handleAddEnquiry}
+              onConvertQuotationToBooking={handleConvertQuotationToBooking}
+              onRecordPayment={handleRecordPayment}
+              onUpdateBookingDelivery={handleUpdateBookingDelivery}
+            />
+          )}
+
           {activeModule === 'calendar' && (
             <CalendarView
-              shoots={mockShoots}
+              shoots={bookings}
               selectedShoot={selectedShoot}
               onSelectShoot={setSelectedShoot}
             />
           )}
 
           {activeModule === 'ledger' && (
-            <LedgerView initialLedger={mockLedger} />
+            <LedgerView initialLedger={ledger} />
           )}
 
           {activeModule === 'billing' && (
-            <InvoicesView invoices={mockInvoices} />
+            <InvoicesView invoices={invoices} />
           )}
 
           {/* Access Control Module */}
@@ -135,10 +397,10 @@ export default function StudioOSHome() {
                       <CheckCircle size={14} /> <span>General Ledger RLS bypass</span>
                     </li>
                     <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                      <CheckCircle size={14} /> <span>Create / Modify / Void Invoices</span>
+                      <CheckCircle size={14} /> <span>Create / Modify / Void Invoices & Quotes</span>
                     </li>
                     <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                      <CheckCircle size={14} /> <span>Crew assignment & gear lock</span>
+                      <CheckCircle size={14} /> <span>Edit Pre-defined catalog items</span>
                     </li>
                   </ul>
                   <button
@@ -167,11 +429,11 @@ export default function StudioOSHome() {
                     <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
                       <CheckCircle size={14} /> <span>Read-only access to assigned call sheets</span>
                     </li>
-                    <li className="flex items-center gap-2 text-vermillion">
-                      <Lock size={14} /> <span>Financial retainers & ledger hidden</span>
+                    <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                      <CheckCircle size={14} /> <span>Edit call sheet checklist & delivery notes</span>
                     </li>
                     <li className="flex items-center gap-2 text-vermillion">
-                      <Lock size={14} /> <span>Client contact emails & billing restricted</span>
+                      <Lock size={14} /> <span>Financial retainers & ledger hidden</span>
                     </li>
                   </ul>
                   <button

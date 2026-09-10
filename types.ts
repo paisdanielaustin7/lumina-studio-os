@@ -73,6 +73,11 @@ export interface ShootBooking {
   }>;
   gearAllocated: string[];
   editorialNotes: string;
+  quotationId?: string;
+  enquiryId?: string;
+  deliveryStage?: DeliveryStage;
+  hardDriveReceived?: boolean;
+  clientSelectionDone?: boolean;
 }
 
 export type LedgerCategory =
@@ -145,8 +150,84 @@ export interface KPISummary {
   };
 }
 
+export type DeliveryStage =
+  | 'RAW_INGESTED'
+  | 'SELECTION_PENDING'
+  | 'EDITING_IN_PROGRESS'
+  | 'ALBUM_DESIGN'
+  | 'DELIVERED'
+  | 'COMPLETED';
+
+export interface QuotationItem {
+  id: string;
+  name: string;
+  price?: string | number;
+  included: boolean;
+}
+
+export interface DeliverableItem {
+  id: string;
+  item: string;
+  details: string;
+  included: boolean;
+}
+
+export interface CrewRequirement {
+  id: string;
+  role: string;
+  number: number;
+}
+
+export type QuotationStatus = 
+  | 'DRAFT' 
+  | 'SENT' 
+  | 'ACCEPTED' 
+  | 'CONVERTED' 
+  | 'EXPIRED';
+
+export interface Quotation {
+  id: string;
+  quotationNumber: string; // e.g. "Q NO. 07"
+  date: string; // e.g. "6 August , 2026"
+  clientName: string;
+  clientCity: string;
+  clientPhone?: string;
+  clientEmail?: string;
+  packageTitle: string; // e.g. "PACKAGE"
+  requirements: QuotationItem[];
+  deliverables: DeliverableItem[];
+  crewAllocation: CrewRequirement[];
+  termsAndConditions: string[];
+  totalPrice: number; // e.g. 90000
+  advancePercentage: number; // default 50
+  status: QuotationStatus;
+  enquiryId?: string;
+  bookingId?: string;
+  contactPerson: string; // e.g. "REUBEN SERRAO"
+  contactPhone: string; // e.g. "+91 9380057445"
+}
+
+export type EnquiryStatus = 'NEW' | 'QUOTED' | 'CONVERTED' | 'ARCHIVED';
+
+export interface Enquiry {
+  id: string;
+  enquiryNumber: string; // e.g. "ENQ-2026-104"
+  clientName: string;
+  phone: string;
+  email: string;
+  city: string;
+  eventDate: string;
+  eventType: string;
+  estimatedBudget: number;
+  status: EnquiryStatus;
+  notes?: string;
+  quotationId?: string;
+  createdAt: string;
+}
+
 export type ViewModule = 
   | 'overview' 
+  | 'quotations'
   | 'calendar' 
   | 'billing' 
   | 'ledger' 

@@ -42,6 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const navItems = [
     { id: 'overview' as ViewModule, label: 'Overview', icon: LayoutDashboard, badge: 'LIVE' },
+    { id: 'quotations' as ViewModule, label: 'Quotations & Orders', icon: Sparkles, badge: 'Q-ENGINE' },
     { id: 'calendar' as ViewModule, label: 'Calendar / Call Sheets', icon: CalendarDays, badge: '4 SETS' },
     { id: 'ledger' as ViewModule, label: 'Dual Ledger', icon: Scale, badge: null },
     { id: 'billing' as ViewModule, label: 'Invoices & Retainers', icon: FileText, badge: null },
