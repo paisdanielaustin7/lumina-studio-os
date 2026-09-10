@@ -402,9 +402,9 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
       {/* ========================================================================= */}
       {activeTab === 'quotations' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Compact Quotation List (5 cols) */}
-          <div className="lg:col-span-5 space-y-3">
-            <div className="flex items-center justify-between text-[11px] font-mono">
+          {/* Left Column: Compact Quotation List with Independent Scroll (5 cols) */}
+          <div className="lg:col-span-5 space-y-3 lg:sticky lg:top-2 max-h-[calc(100vh-140px)] flex flex-col">
+            <div className="flex items-center justify-between text-[11px] font-mono shrink-0 pb-1">
               <span className="uppercase tracking-widest text-bone-muted dark:text-obsidian-muted">
                 Issued Packages ({filteredQuotes.length})
               </span>
@@ -420,7 +420,7 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 overflow-y-auto pr-1 flex-1">
               {filteredQuotes.map((q) => {
                 const isSelected = selectedQuote.id === q.id;
                 return (
@@ -463,8 +463,8 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
             </div>
           </div>
 
-          {/* Right Column: Visual Preview Deck (Strictly LUMINA Branding) */}
-          <div className="lg:col-span-7 bg-[#f3f7f4] text-[#0f1714] border-2 border-carbon dark:border-white p-5 lg:p-7 shadow-xl space-y-4">
+          {/* Right Column: Visual Preview Deck with Independent Scroll (Strictly LUMINA Branding) */}
+          <div className="lg:col-span-7 bg-[#f3f7f4] text-[#0f1714] border-2 border-carbon dark:border-white p-5 lg:p-7 shadow-xl space-y-4 max-h-[calc(100vh-140px)] overflow-y-auto">
             {/* Header: Pure LUMINA Branding */}
             <div className="flex items-start justify-between border-b border-[#d8e2dc] pb-3">
               <div>

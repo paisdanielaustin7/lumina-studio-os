@@ -72,6 +72,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     canViewFinances: boolean;
     canAccessSettings: boolean;
     canEditQuotesAndOrders: boolean;
+    canEditLedger: boolean;
   }>({
     fullName: '',
     username: '',
@@ -80,6 +81,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     canViewFinances: false,
     canAccessSettings: false,
     canEditQuotesAndOrders: false,
+    canEditLedger: false,
   });
 
   const showSuccessFeedback = () => {
@@ -152,6 +154,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       canViewFinances: false,
       canAccessSettings: false,
       canEditQuotesAndOrders: false,
+      canEditLedger: false,
     });
     setIsUserModalOpen(true);
   };
@@ -167,6 +170,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       canViewFinances: u.canViewFinances,
       canAccessSettings: u.canAccessSettings,
       canEditQuotesAndOrders: u.canEditQuotesAndOrders,
+      canEditLedger: !!u.canEditLedger,
     });
     setIsUserModalOpen(true);
   };
@@ -187,6 +191,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               canViewFinances: userFormData.canViewFinances,
               canAccessSettings: userFormData.canAccessSettings,
               canEditQuotesAndOrders: userFormData.canEditQuotesAndOrders,
+              canEditLedger: userFormData.canEditLedger,
             }
           : u
       );
@@ -205,6 +210,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         canViewFinances: userFormData.canViewFinances,
         canAccessSettings: userFormData.canAccessSettings,
         canEditQuotesAndOrders: userFormData.canEditQuotesAndOrders,
+        canEditLedger: userFormData.canEditLedger,
       };
       onUpdateUsers([...users, newUser]);
     }
@@ -262,13 +268,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               Read-Only Viewer
             </span>
           )}
-          <button
-            onClick={onOpenLoginModal}
-            className="px-3 py-1.5 text-xs font-mono uppercase tracking-wider border border-bone-border dark:border-obsidian-border hover:border-carbon dark:hover:border-white transition-all flex items-center gap-1.5"
-          >
-            <User size={12} />
-            <span>Switch Account (@{currentUser.username})</span>
-          </button>
         </div>
       </div>
 
@@ -847,6 +846,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                           {u.canEditQuotesAndOrders ? 'EDIT' : 'VIEW ONLY'}
                         </span>
                       </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-bone-muted">Edit Ledger Entries:</span>
+                        <span className={u.canEditLedger || u.role === 'ADMIN_DIRECTOR' ? 'text-green-600 dark:text-green-400 font-bold' : 'text-vermillion'}>
+                          {u.canEditLedger || u.role === 'ADMIN_DIRECTOR' ? 'ALLOWED' : 'LOCKED'}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Action buttons (Admin only) */}
@@ -1013,6 +1018,25 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     </span>
                     <span className="text-[9px] text-bone-muted block">
                       If unchecked, quotations and orders can only be viewed in read-only mode.
+                    </span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={userFormData.canEditLedger}
+                    onChange={(e) =>
+                      setUserFormData({ ...userFormData, canEditLedger: e.target.checked })
+                    }
+                    className="w-3.5 h-3.5 accent-vermillion rounded"
+                  />
+                  <div>
+                    <span className="font-bold text-carbon dark:text-white block text-[11px]">
+                      Edit & Record Ledger Transactions
+                    </span>
+                    <span className="text-[9px] text-bone-muted block">
+                      Allows staff to modify, create, and delete entries in the Dual General Ledger.
                     </span>
                   </div>
                 </label>

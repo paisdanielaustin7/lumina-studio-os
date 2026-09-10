@@ -46,15 +46,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { theme, toggleTheme } = useTheme();
 
-  const navItems = [
+  const allNavItems = [
     { id: 'overview' as ViewModule, label: 'Overview', icon: LayoutDashboard, badge: 'LIVE' },
     { id: 'quotations' as ViewModule, label: 'Quotations & Orders', icon: Sparkles, badge: currentUser.canEditQuotesAndOrders ? null : 'VIEW' },
     { id: 'calendar' as ViewModule, label: 'Calendar / Call Sheets', icon: CalendarDays, badge: '4 SETS' },
     { id: 'ledger' as ViewModule, label: 'Dual Ledger', icon: Scale, badge: currentUser.canViewFinances ? null : 'LOCK' },
     { id: 'billing' as ViewModule, label: 'Invoices & Retainers', icon: FileText, badge: null },
-    { id: 'access' as ViewModule, label: 'Access Control', icon: ShieldCheck, badge: currentUser.role === 'ADMIN_DIRECTOR' ? 'ROOT' : 'CREW' },
+    { id: 'access' as ViewModule, label: 'Access Control', icon: ShieldCheck, badge: 'ROOT' },
     { id: 'settings' as ViewModule, label: 'Studio Settings', icon: Settings, badge: currentUser.canAccessSettings ? null : 'VIEW' },
   ];
+
+  // Only Admin has Access Control section in the navigation
+  const navItems = allNavItems.filter((item) => {
+    if (item.id === 'access') {
+      return currentUser.role === 'ADMIN_DIRECTOR';
+    }
+    return true;
+  });
 
   return (
     <motion.aside
@@ -234,13 +242,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               <div className="flex items-center gap-0.5 shrink-0">
-                <button
-                  onClick={onOpenLoginModal}
-                  className="p-1 text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white transition-colors"
-                  title="Switch User Account"
-                >
-                  <KeyRound size={12} />
-                </button>
                 <button
                   onClick={onLogout}
                   className="p-1 text-vermillion hover:bg-vermillion/15 transition-colors"

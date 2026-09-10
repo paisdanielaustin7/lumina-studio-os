@@ -10,6 +10,7 @@ import { QuotationView } from '@/components/QuotationView';
 import { SettingsView } from '@/components/SettingsView';
 import { LoginModal } from '@/components/LoginModal';
 import { LoginPage } from '@/components/LoginPage';
+import { MasterSearchModal } from '@/components/MasterSearchModal';
 import {
   mockKPISummary,
   mockShoots,
@@ -44,6 +45,7 @@ import {
   ExternalLink,
   Users,
   LogOut,
+  Search,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -58,6 +60,7 @@ export default function StudioOSHome() {
   const [users, setUsers] = useState<UserAccount[]>(defaultUsers);
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isMasterSearchOpen, setIsMasterSearchOpen] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   // Synced Live State across all modules
@@ -115,6 +118,18 @@ export default function StudioOSHome() {
     }
 
     setIsAuthChecking(false);
+  }, []);
+
+  // Global Ctrl+K / Cmd+K listener for Master Search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsMasterSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const handleUpdateUsers = (newUsers: UserAccount[]) => {
@@ -497,6 +512,25 @@ export default function StudioOSHome() {
         onLogin={handleSwitchUser}
       />
 
+      {/* Global Studio Master Search Modal (Instant Record Retrieval across all modules) */}
+      <MasterSearchModal
+        isOpen={isMasterSearchOpen}
+        onClose={() => setIsMasterSearchOpen(false)}
+        quotations={quotations}
+        bookings={bookings}
+        invoices={invoices}
+        ledger={ledger}
+        enquiries={enquiries}
+        currentUser={currentUser}
+        onSelectRecord={(module, recordId) => {
+          setActiveModule(module);
+          if (module === 'calendar') {
+            const matched = bookings.find((b) => b.id === recordId || b.shootCode === recordId);
+            if (matched) setSelectedShoot(matched);
+          }
+        }}
+      />
+
       {/* Left Collapsible Studio OS Sidebar */}
       <Sidebar
         activeModule={activeModule}
@@ -510,7 +544,7 @@ export default function StudioOSHome() {
 
       {/* Main Studio Viewport */}
       <main className="flex-1 h-screen overflow-y-auto relative flex flex-col">
-        {/* Subtle Top Status Bar with Logout Action */}
+        {/* Subtle Top Status Bar with Master Search and Logout Action */}
         <div className="h-10 px-6 border-b border-bone-border dark:border-obsidian-border flex items-center justify-between text-[11px] font-mono shrink-0 bg-bone-surface/60 dark:bg-obsidian-surface/60">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400 font-bold">
@@ -523,14 +557,18 @@ export default function StudioOSHome() {
             </span>
           </div>
 
-          <div className="flex items-center gap-4 text-bone-muted dark:text-obsidian-muted">
+          <div className="flex items-center gap-3 text-bone-muted dark:text-obsidian-muted">
+            {/* Global Master Search Quick-Button */}
             <button
-              onClick={() => setIsLoginModalOpen(true)}
-              className="text-xs uppercase font-mono tracking-wider hover:text-carbon dark:hover:text-white flex items-center gap-1.5 text-carbon dark:text-white transition-colors"
-              title="Switch identity"
+              onClick={() => setIsMasterSearchOpen(true)}
+              className="px-2.5 py-1 text-[10px] uppercase font-mono tracking-wider border border-bone-border dark:border-obsidian-border hover:border-carbon dark:hover:border-white text-carbon dark:text-white flex items-center gap-1.5 transition-all bg-bone-card/50 dark:bg-obsidian-card/50"
+              title="Search all records (Ctrl+K)"
             >
-              <KeyRound size={12} />
-              <span className="hidden sm:inline">Switch User</span>
+              <Search size={11} className="text-vermillion" />
+              <span>Master Search</span>
+              <kbd className="hidden sm:inline-block px-1 py-0.2 bg-carbon/10 dark:bg-white/10 text-[9px] font-mono">
+                Ctrl+K
+              </kbd>
             </button>
 
             {/* Prominent Logout Button */}
@@ -598,6 +636,7 @@ export default function StudioOSHome() {
               initialLedger={ledger}
               currentUser={currentUser}
               onOpenLoginModal={() => setIsLoginModalOpen(true)}
+              onUpdateLedger={setLedger}
             />
           )}
 
@@ -609,8 +648,8 @@ export default function StudioOSHome() {
             />
           )}
 
-          {/* Access Control Overview Module */}
-          {activeModule === 'access' && (
+          {/* Access Control Overview Module (Admin Only) */}
+          {activeModule === 'access' && currentUser.role === 'ADMIN_DIRECTOR' && (
             <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-8 animate-fadeIn">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-bone-border dark:border-obsidian-border">
                 <div>
@@ -720,7 +759,7 @@ export default function StudioOSHome() {
                   </ul>
                   <div className="pt-2">
                     <div className="w-full py-2 text-center text-xs font-mono uppercase tracking-widest border border-bone-border dark:border-obsidian-border bg-bone-surface dark:bg-obsidian-surface text-bone-muted dark:text-obsidian-muted">
-                      {currentUser.role === 'SECOND_SHOOTER' ? 'Active Authenticated Role' : 'Assigned to Crew Unit'}
+                      Assigned to Crew Unit
                     </div>
                   </div>
                 </div>

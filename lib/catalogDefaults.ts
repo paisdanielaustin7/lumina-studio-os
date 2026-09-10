@@ -127,6 +127,7 @@ export const defaultUsers: UserAccount[] = [
     canViewFinances: true,
     canAccessSettings: true,
     canEditQuotesAndOrders: true,
+    canEditLedger: true,
   },
   {
     id: 'usr-roshan',
@@ -137,6 +138,7 @@ export const defaultUsers: UserAccount[] = [
     canViewFinances: false, // hidden finances
     canAccessSettings: false, // restricted settings
     canEditQuotesAndOrders: false, // restricted from editing finalized quotes
+    canEditLedger: false,
   },
   {
     id: 'usr-farooq',
@@ -147,5 +149,6 @@ export const defaultUsers: UserAccount[] = [
     canViewFinances: false,
     canAccessSettings: false,
     canEditQuotesAndOrders: false,
+    canEditLedger: false,
   },
 ];

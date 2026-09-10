@@ -269,4 +269,5 @@ export interface UserAccount {
   canViewFinances: boolean; // Selective access: hides ledger & revenues if false
   canAccessSettings: boolean; // Selective access: hides studio parameters if false
   canEditQuotesAndOrders: boolean; // Selective access: read-only quote/order access if false
+  canEditLedger: boolean; // Selective access: can edit/modify dual ledger transactions
 }
