@@ -66,7 +66,7 @@ export default function StudioOSHome() {
           </div>
 
           <div className="flex items-center gap-4 text-bone-muted dark:text-obsidian-muted">
-            <span className="hidden md:inline">COLOR PIPELINE: 16-BIT PROPHOTO RGB</span>
+            <span className="hidden md:inline">COLOR PIPELINE: 16-BIT PROPHOTO RGB // MANGALORE COASTAL HQ</span>
             <Link
               href="/about"
               className="text-carbon dark:text-white hover:text-vermillion dark:hover:text-vermillion transition-colors flex items-center gap-1 uppercase font-bold"

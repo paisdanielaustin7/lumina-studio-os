@@ -81,8 +81,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     }
   };
 
-  const formatCurrency = (val: number, currency = 'EUR') => {
-    return new Intl.NumberFormat('en-US', {
+  const formatCurrency = (val: number, currency = 'INR') => {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: currency,
       maximumFractionDigits: 0,

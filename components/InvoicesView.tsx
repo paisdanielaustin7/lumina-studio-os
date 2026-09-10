@@ -12,9 +12,9 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({ invoices }) => {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice>(invoices[0]);
 
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'EUR',
+      currency: 'INR',
       maximumFractionDigits: 0,
     }).format(val);
   };
@@ -97,7 +97,7 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({ invoices }) => {
           <div className="flex items-start justify-between border-b border-bone-border dark:border-obsidian-border pb-5">
             <div>
               <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-vermillion font-bold block mb-1">
-                LUMINA STUDIO PARIS // OFFICIAL BILLING
+                LUMINA ATELIER MANGALORE // TAX INVOICE // GSTIN: 29AABCL1984M1Z8
               </span>
               <h2 className="text-2xl font-serif font-black text-carbon dark:text-white">
                 {selectedInvoice.invoiceNumber}
@@ -158,8 +158,8 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({ invoices }) => {
               <span className="font-bold text-carbon dark:text-white">{formatCurrency(selectedInvoice.subtotal)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-bone-muted dark:text-obsidian-muted uppercase">Tax & Duty (0% Reverse-Charge)</span>
-              <span className="text-carbon dark:text-white">€0.00</span>
+              <span className="text-bone-muted dark:text-obsidian-muted uppercase">Integrated GST (18% CGST/SGST Included)</span>
+              <span className="text-carbon dark:text-white">₹0.00</span>
             </div>
             <div className="flex justify-between text-base font-bold pt-2 border-t border-bone-border dark:border-obsidian-border">
               <span className="uppercase text-carbon dark:text-white">Total Amount</span>

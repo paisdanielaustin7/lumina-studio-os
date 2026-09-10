@@ -25,54 +25,54 @@ export default function PublicEditorialAbout() {
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
   const [inquirySubmitted, setInquirySubmitted] = useState(false);
 
-  // Client roster
+  // Client roster with Karnataka, Mangalore, and Indian luxury context
   const clientCredits = [
-    { name: 'Maison Margiela Artisanal', category: 'Haute Couture', city: 'Paris' },
-    { name: 'Architectural Digest', category: 'Editorial Architecture', city: 'New York / Milan' },
-    { name: 'Boucheron Haute Joaillerie', category: 'High Jewelry', city: 'Place Vendôme' },
-    { name: 'Singer Vehicle Design', category: 'Automotive Restomod', city: 'California' },
-    { name: 'Acne Studios', category: 'Avant-Garde Ready-To-Wear', city: 'Stockholm' },
-    { name: 'Bottega Veneta', category: 'Leather Craft Studies', city: 'Milan' },
-    { name: 'Wallpaper* Magazine', category: 'Design Features', city: 'London' },
-    { name: 'Leica Camera AG', category: 'Monochrom Fine Art', city: 'Wetzlar' },
+    { name: 'The Saffron & Silk Atelier', category: 'Heirloom Bridal Couture', city: 'Mangalore' },
+    { name: 'Architectural Digest India', category: 'Coastal Architecture Feature', city: 'Padubidri / Udupi' },
+    { name: 'Zohra Fine Heritage Jewels', category: 'Basra Pearls & Polki', city: 'Hampankatta / Dubai' },
+    { name: 'Sasihithlu Reserve Botanicals', category: 'Coastal Distillation Campaign', city: 'Sasihithlu' },
+    { name: 'Balur Estate Single-Origin', category: '1840 Heritage Planter Series', city: 'Chikmagalur' },
+    { name: 'The House of Angadi', category: 'Pure Zari Kanjeevaram & Silks', city: 'Bangalore' },
+    { name: 'Malabar Heritage Vault', category: 'Temple Gold Craft Studies', city: 'Mangalore / Calicut' },
+    { name: 'Leica Camera India', category: 'Western Ghats Monochrom Series', city: 'Wetzlar / New Delhi' },
   ];
 
   // Gear rack breakdown
   const gearRack = [
     {
-      category: 'Digital Medium Format & Backs',
+      category: 'Digital Medium Format & Optical Backs',
       items: [
         'Phase One IQ4 150MP Achromatic & Trichromatic Backs',
-        'Hasselblad H6D-100c Medium Format System',
+        'Hasselblad H6D-100c Medium Format Studio System',
         'Hasselblad X2D 100C Mirrorless Field Body',
-        'Cambo WRS-1600 Technical Shift Camera',
+        'Cambo WRS-1600 Technical Perspective Shift Camera',
       ],
     },
     {
-      category: 'Specialist Optical Glass',
+      category: 'Specialist Optical Glass & Micro-Rails',
       items: [
         'Rodenstock HR Digaron-W 32mm f/4 & 70mm f/5.6',
         'Hasselblad HC 100mm f/2.2 & 28mm f/4 Ultra-Wide',
-        'Cooke Full Frame Plus Prime Cine T2.1 Set',
         'Schneider Kreuznach 120mm LS f/4 Macro Focus Stack',
+        'Cognisys StackShot 3X Automated Motorized Micro-Rail',
       ],
     },
     {
-      category: 'Editorial Light & Atmospheric Rigging',
+      category: 'Continuous & Strobe Lighting Generators',
       items: [
-        'Briese Focus 220cm Parabolic Reflector & Tungsten/Flash Generator',
-        'Profoto Pro-11 2400W AirX Studio Packs (x4)',
-        'Broncolor Scoro 3200 S WiFi RFS 2 Precision Generators',
-        'Arri Orbiter & SkyPanel S60-C Tunable LED Fresnels',
+        'Profoto Pro-11 2400W AirX Studio Packs & High-Speed Heads',
+        'Profoto B10X Plus All-Terrain Location Battery Packs',
+        'Broncolor Scoro 3200 S Precision Flash Generators',
+        'Arri SkyPanel S60-C Tunable LED Softlight Panels',
       ],
     },
     {
-      category: 'Digital Imaging Tether & Color Pipeline',
+      category: 'On-Set Capture Station & Color Calibration',
       items: [
-        'Inovativ Scout 37 Digi-Plate Carbon Workstation',
+        'Inovativ Scout 37 All-Terrain Digi-Plate Workstation',
         'Eizo ColorEdge Prominence CG3146 HDR Reference 4K',
-        'Thunderbolt 4 Fibre-Optic 30m Realtime Tether Line',
-        'Triple NVMe RAID 0 High-Speed On-Set Backup System',
+        'Fibre-Optic 30m High-Speed Weather-Sealed Tether Line',
+        'Triple Mirror RAID NVMe On-Set Cold Backup Workstation',
       ],
     },
   ];
@@ -97,7 +97,7 @@ export default function PublicEditorialAbout() {
               </span>
             </Link>
             <span className="hidden md:inline-block text-[11px] font-mono text-bone-muted dark:text-obsidian-muted uppercase tracking-[0.2em] border-l border-bone-border dark:border-obsidian-border pl-6">
-              Studio Manifesto & Public Dossier
+              Mangalore Atelier & Public Dossier
             </span>
           </div>
 
@@ -140,7 +140,7 @@ export default function PublicEditorialAbout() {
         <div className="space-y-6">
           <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-[0.3em] text-vermillion font-bold">
             <span className="w-3 h-px bg-vermillion" />
-            <span>Monochrome Precision // Medium Format Architecture</span>
+            <span>Coastal Karnataka // Arabian Sea & Western Ghats</span>
           </div>
 
           <h1 className="text-5xl sm:text-7xl lg:text-9xl font-serif font-black tracking-tight leading-[0.88] uppercase text-carbon dark:text-white">
@@ -152,20 +152,20 @@ export default function PublicEditorialAbout() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-8 items-end">
             <div className="lg:col-span-7">
               <p className="text-lg md:text-2xl font-serif text-carbon/90 dark:text-bone/90 leading-relaxed font-light">
-                LUMINA is an independent, Paris-based digital art direction studio and photographic atelier. We orchestrate architectural commissions, haute couture editorials, and commercial campaigns with technical cameras, raw daylight, and brutalist restraint.
+                LUMINA is an independent photographic atelier and digital art direction house rooted in Mangalore, Karnataka. We orchestrate architectural features, heirloom bridal couture campaigns, and commercial series across the Arabian Sea coastline and Western Ghats with medium-format precision and brutalist restraint.
               </p>
             </div>
 
             <div className="lg:col-span-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border">
               <div className="font-mono text-xs space-y-1">
                 <span className="text-[10px] uppercase text-bone-muted dark:text-obsidian-muted block tracking-widest">
-                  Current Headquarters
+                  Coastal Headquarters
                 </span>
                 <p className="font-bold text-carbon dark:text-white">
-                  Pavillon de l’Arsenal, 4e Paris
+                  Kudla Coastal Atelier, Mangalore
                 </p>
                 <p className="text-bone-muted dark:text-obsidian-muted">
-                  48.8519° N, 2.3619° E
+                  12.9141° N, 74.8560° E // Dakshina Kannada
                 </p>
               </div>
 
@@ -189,34 +189,34 @@ export default function PublicEditorialAbout() {
               Chapter 01 // Manifesto
             </span>
             <h2 className="text-3xl lg:text-4xl font-serif font-bold uppercase text-carbon dark:text-white">
-              The Antidote to the Ephemeral
+              Coastal Light & Organic Physics
             </h2>
           </div>
 
           <div className="lg:col-span-8 space-y-6 text-sm md:text-base text-carbon/80 dark:text-bone/80 leading-relaxed font-sans">
             <p>
-              In an epoch drowned in disposable content and synthetic rendering, we practice photographic permanence. Every frame captured by LUMINA begins with optical physics: 150-megapixel medium-format sensors, precision Rodenstock technical shift lenses, and sculpted architectural light.
+              Along the rugged coastline of Dakshina Kannada, light behaves differently. The pre-monsoon mist off the Arabian Sea, the porous textures of ancient laterite stone, aged teakwood verandahs, and the deep shimmer of pure gold and raw silk demand absolute fidelity.
             </p>
             <p>
-              We reject the plastic veneer of over-smoothed digital post-production. Instead, we preserve organic film grain, micro-textures of wool and cast concrete, diamond refractive indices, and the stark geometries of European brutalism.
+              We decline synthetic AI smoothing and generic commercial post-processing. Every commission is captured on 150-megapixel medium format digital sensors and technical perspective-shift glass, preserving microscopic fabric weaves, seawater spray on coastal cliffs, and organic film grain.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-bone-border dark:border-obsidian-border font-mono text-xs">
               <div>
                 <span className="text-vermillion font-bold block mb-1">01 / RESOLUTION</span>
                 <p className="text-bone-muted dark:text-obsidian-muted">
-                  150-Megapixel Achromatic & Trichromatic sensor capture with optical parity.
+                  150-Megapixel Phase One & Hasselblad medium-format sensor resolution.
                 </p>
               </div>
               <div>
-                <span className="text-vermillion font-bold block mb-1">02 / RIGOR</span>
+                <span className="text-vermillion font-bold block mb-1">02 / LOCAL MASTERY</span>
                 <p className="text-bone-muted dark:text-obsidian-muted">
-                  Strict mechanical perspective correction in-camera prior to exposure.
+                  In-depth terrain logistics from Someshwara to Malpe, Sasihithlu, and Chikmagalur.
                 </p>
               </div>
               <div>
-                <span className="text-vermillion font-bold block mb-1">03 / CALIBRATION</span>
+                <span className="text-vermillion font-bold block mb-1">03 / COLOR SCIENCE</span>
                 <p className="text-bone-muted dark:text-obsidian-muted">
-                  Bespoke 16-bit ProPhoto color profiles calibrated per project.
+                  16-bit ProPhoto profiles preserving the rich warmth of Indian heirloom palettes.
                 </p>
               </div>
             </div>
@@ -236,7 +236,7 @@ export default function PublicEditorialAbout() {
             </h2>
           </div>
           <span className="text-xs font-mono uppercase tracking-widest text-bone-muted dark:text-obsidian-muted">
-            Global Archive 2022 — 2026
+            Karnataka & Pan-India Archive 2022 — 2026
           </span>
         </div>
 
@@ -271,11 +271,11 @@ export default function PublicEditorialAbout() {
               Chapter 03 // Hardware Inventory
             </span>
             <h2 className="text-3xl lg:text-4xl font-serif font-bold uppercase text-carbon dark:text-white">
-              The Gear Rack & Optical Vault
+              Studio Gear Rack & Optical Vault
             </h2>
           </div>
           <span className="text-xs font-mono uppercase tracking-widest text-bone-muted dark:text-obsidian-muted">
-            All Hardware Studio-Owned & Calibrated
+            All Hardware Studio-Owned & Maintained in Climate-Controlled Vaults
           </span>
         </div>
 
@@ -307,10 +307,10 @@ export default function PublicEditorialAbout() {
       {/* Big Footer CTA */}
       <footer className="py-24 px-6 lg:px-12 max-w-7xl mx-auto text-center space-y-8">
         <span className="text-xs font-mono uppercase tracking-[0.3em] text-vermillion font-bold block">
-          Inquire For Q4 2026 Commissions
+          Inquire For Q4 2026 Production Dates
         </span>
         <h2 className="text-4xl sm:text-6xl font-serif font-black uppercase text-carbon dark:text-white max-w-3xl mx-auto leading-tight">
-          Let us discuss your next editorial milestone.
+          Let us discuss your next coastal campaign.
         </h2>
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
           <button
@@ -333,7 +333,7 @@ export default function PublicEditorialAbout() {
 
         <div className="pt-16 border-t border-bone-border dark:border-obsidian-border flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-bone-muted dark:text-obsidian-muted">
           <span>© 2026 LUMINA ATELIER & STUDIO OS. ALL RIGHTS RESERVED.</span>
-          <span>PARIS // LAKE COMO // LOS ANGELES</span>
+          <span>MANGALORE // UDUPI // WESTERN GHATS // BANGALORE</span>
         </div>
       </footer>
 
@@ -358,7 +358,7 @@ export default function PublicEditorialAbout() {
               <div className="flex items-center justify-between pb-4 border-b border-bone-border dark:border-obsidian-border mb-6">
                 <div>
                   <span className="text-[10px] font-mono uppercase tracking-widest text-vermillion font-bold block mb-0.5">
-                    LUMINA STUDIO // CLIENT INTAKE
+                    LUMINA STUDIO // CLIENT COMMISSION INTAKE
                   </span>
                   <h3 className="font-serif text-2xl font-bold uppercase text-carbon dark:text-white">
                     Book a Production Session
@@ -379,10 +379,10 @@ export default function PublicEditorialAbout() {
                     <CheckCircle size={24} />
                   </div>
                   <h4 className="font-serif text-xl font-bold uppercase text-carbon dark:text-white">
-                    Inquiry Transmitted
+                    Brief Transmitted
                   </h4>
                   <p className="text-xs text-bone-muted dark:text-obsidian-muted max-w-sm mx-auto">
-                    Your production brief has entered the direct queue of Studio Director Dan Aurel. Our studio manager will confirm date availability within 24 hours.
+                    Your production brief has reached Studio Director Dan Aurel at our Mangalore headquarters. Our team will verify date availability and revert within 24 hours.
                   </p>
                   <button
                     onClick={() => setIsInquiryOpen(false)}
@@ -396,23 +396,23 @@ export default function PublicEditorialAbout() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] uppercase text-bone-muted dark:text-obsidian-muted mb-1">
-                        Your Name / Title
+                        Client / Brand Representative
                       </label>
                       <input
                         type="text"
                         required
-                        placeholder="Aurelia Vance"
+                        placeholder="e.g. Vanessa D’Souza / Arvind Hegde"
                         className="w-full p-2.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
                       />
                     </div>
                     <div>
                       <label className="block text-[10px] uppercase text-bone-muted dark:text-obsidian-muted mb-1">
-                        Brand / Publication
+                        Brand / House / Publication
                       </label>
                       <input
                         type="text"
                         required
-                        placeholder="Maison Margiela"
+                        placeholder="e.g. The Saffron & Silk Atelier"
                         className="w-full p-2.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
                       />
                     </div>
@@ -421,38 +421,38 @@ export default function PublicEditorialAbout() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] uppercase text-bone-muted dark:text-obsidian-muted mb-1">
-                        Corporate Email
+                        Official Email / Phone
                       </label>
                       <input
-                        type="email"
+                        type="text"
                         required
-                        placeholder="a.vance@margiela.com"
+                        placeholder="vanessa@saffronsilk.in / +91 98450..."
                         className="w-full p-2.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
                       />
                     </div>
                     <div>
                       <label className="block text-[10px] uppercase text-bone-muted dark:text-obsidian-muted mb-1">
-                        Production Format
+                        Campaign Category
                       </label>
                       <select
                         className="w-full p-2.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
                       >
-                        <option>Haute Couture Editorial</option>
-                        <option>Architectural Digest Feature</option>
-                        <option>High Jewelry Macro Lookbook</option>
-                        <option>Commercial Brand Campaign</option>
+                        <option>Heirloom Bridal Couture Lookbook</option>
+                        <option>Architectural Digest & Ocean Residence</option>
+                        <option>Heritage Jewelry & Polki Macro Series</option>
+                        <option>Western Ghats Estate & Commercial Campaign</option>
                       </select>
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-[10px] uppercase text-bone-muted dark:text-obsidian-muted mb-1">
-                      Creative Brief & Estimated Production Dates
+                      Creative Brief & Target Coastal Locations
                     </label>
                     <textarea
                       rows={4}
                       required
-                      placeholder="Outline target shoot dates, location requirements (Paris, Lake Como, Mojave), shot list count, and timeline..."
+                      placeholder="Specify preferred dates, coastal locations (Someshwara, Sasihithlu, Malpe, Chikmagalur), shot list target, and styling requirements..."
                       className="w-full p-2.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none resize-none"
                     />
                   </div>

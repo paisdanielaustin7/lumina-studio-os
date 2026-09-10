@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS public.shoot_bookings (
   total_fee NUMERIC(12, 2) DEFAULT 0.00 NOT NULL,
   retainer_paid NUMERIC(12, 2) DEFAULT 0.00 NOT NULL,
   balance_due NUMERIC(12, 2) GENERATED ALWAYS AS (total_fee - retainer_paid) STORED,
-  currency TEXT DEFAULT 'EUR' NOT NULL,
+  currency TEXT DEFAULT 'INR' NOT NULL,
   
   -- Complex production schedule stored as structured JSONB
   schedule_timeline JSONB DEFAULT '[]'::jsonb,

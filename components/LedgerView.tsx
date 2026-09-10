@@ -33,9 +33,9 @@ export const LedgerView: React.FC<LedgerViewProps> = ({ initialLedger }) => {
   const [newCategory, setNewCategory] = useState<LedgerCategory>('GEAR_RENTAL');
 
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'EUR',
+      currency: 'INR',
       maximumFractionDigits: 0,
     }).format(val);
   };
@@ -192,7 +192,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({ initialLedger }) => {
                 <th className="py-3 px-4">Date</th>
                 <th className="py-3 px-4">Description & Counterparty</th>
                 <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4 text-right">Amount (EUR)</th>
+                <th className="py-3 px-4 text-right">Amount (INR / ₹)</th>
                 <th className="py-3 px-4 text-center">Status</th>
               </tr>
             </thead>
@@ -306,7 +306,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({ initialLedger }) => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. ProFoto Paris Hire"
+                  placeholder="e.g. Kudla Cine Gear Hire"
                   value={newCounterparty}
                   onChange={(e) => setNewCounterparty(e.target.value)}
                   className="w-full p-2.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
@@ -316,13 +316,13 @@ export const LedgerView: React.FC<LedgerViewProps> = ({ initialLedger }) => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] uppercase text-bone-muted dark:text-obsidian-muted mb-1">
-                    Amount (EUR)
+                    Amount (INR / ₹)
                   </label>
                   <input
                     type="number"
-                    step="0.01"
+                    step="1"
                     required
-                    placeholder="3500.00"
+                    placeholder="35000"
                     value={newAmount}
                     onChange={(e) => setNewAmount(e.target.value)}
                     className="w-full p-2.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"

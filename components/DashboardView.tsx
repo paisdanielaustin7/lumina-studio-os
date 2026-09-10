@@ -37,7 +37,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onNavigate,
   onSelectShoot,
 }) => {
-  const nextShoot = shoots[0]; // Next up on set (Maison Margiela)
+  const nextShoot = shoots[0]; // Next up on set (Someshwara Beach / Saffron & Silk)
   const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
 
   const filteredLedger = ledger.filter((entry) => {
@@ -45,8 +45,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return entry.type === filterType;
   });
 
-  const formatCurrency = (val: number, currency = 'EUR') => {
-    return new Intl.NumberFormat('en-US', {
+  const formatCurrency = (val: number, currency = 'INR') => {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: currency,
       maximumFractionDigits: 0,
@@ -61,7 +61,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.25em] text-bone-muted dark:text-obsidian-muted mb-1">
             <span>Studio Terminal</span>
             <span>//</span>
-            <span className="text-vermillion font-bold">Paris IVe Headquarters</span>
+            <span className="text-vermillion font-bold">Mangalore Coastal Atelier</span>
             <span>//</span>
             <span>Active Session 2026.09</span>
           </div>
@@ -131,7 +131,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           >
             <div className="flex items-center justify-between text-bone-muted dark:text-obsidian-muted mb-3">
               <span className="text-[10px] font-mono uppercase tracking-[0.2em]">
-                Vault Liquid Inflow
+                Liquid Vault Reserve
               </span>
               <CreditCard size={14} className="text-carbon dark:text-white" />
             </div>
@@ -163,7 +163,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           >
             <div className="flex items-center justify-between text-bone-muted dark:text-obsidian-muted mb-3">
               <span className="text-[10px] font-mono uppercase tracking-[0.2em]">
-                Active Set Bookings
+                Active Coastal Sets
               </span>
               <Camera size={14} className="text-vermillion" />
             </div>
@@ -192,7 +192,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           >
             <div className="flex items-center justify-between text-bone-muted dark:text-obsidian-muted mb-3">
               <span className="text-[10px] font-mono uppercase tracking-[0.2em]">
-                Unpaid Client Retainers
+                Pending Client Retainers
               </span>
               <AlertCircle size={14} className="text-amber-500" />
             </div>
@@ -202,7 +202,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
               <div className="mt-2 flex items-center justify-between text-[11px] font-mono">
                 <span className="text-amber-600 dark:text-amber-400">
-                  {kpi.unpaidRetainers.count} Invoices Pending
+                  {kpi.unpaidRetainers.count} Retainers Awaited
                 </span>
                 <span className="text-bone-muted dark:text-obsidian-muted">
                   Strict 15-Day Net
