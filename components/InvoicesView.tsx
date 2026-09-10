@@ -1,18 +1,23 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Invoice } from '@/types';
-import { FileText, Download, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Invoice, StudioSettings, UserAccount } from '@/types';
+import { FileText, Download, CheckCircle, Clock, AlertCircle, Lock } from 'lucide-react';
 import { generateInvoicePDF } from '@/lib/pdfGenerator';
 
 interface InvoicesViewProps {
   invoices: Invoice[];
+  settings?: StudioSettings;
+  currentUser?: UserAccount;
 }
 
-export const InvoicesView: React.FC<InvoicesViewProps> = ({ invoices }) => {
+export const InvoicesView: React.FC<InvoicesViewProps> = ({ invoices, settings, currentUser }) => {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice>(invoices[0]);
 
+  const canViewFinances = currentUser ? currentUser.canViewFinances : true;
+
   const formatCurrency = (val: number) => {
+    if (!canViewFinances) return '₹ ••••••';
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
@@ -174,7 +179,7 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({ invoices }) => {
 
           <div className="pt-4 flex gap-3">
             <button
-              onClick={() => generateInvoicePDF(selectedInvoice)}
+              onClick={() => generateInvoicePDF(selectedInvoice, settings)}
               className="flex-1 py-2.5 text-xs font-mono uppercase tracking-widest bg-carbon text-bone dark:bg-white dark:text-carbon hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all flex items-center justify-center gap-2"
             >
               <Download size={14} />

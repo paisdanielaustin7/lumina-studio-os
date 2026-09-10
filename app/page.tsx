@@ -7,6 +7,8 @@ import { CalendarView } from '@/components/CalendarView';
 import { LedgerView } from '@/components/LedgerView';
 import { InvoicesView } from '@/components/InvoicesView';
 import { QuotationView } from '@/components/QuotationView';
+import { SettingsView } from '@/components/SettingsView';
+import { LoginModal } from '@/components/LoginModal';
 import {
   mockKPISummary,
   mockShoots,
@@ -15,6 +17,7 @@ import {
   mockQuotations,
   mockEnquiries,
 } from '@/lib/mockData';
+import { defaultStudioSettings, defaultUsers } from '@/lib/catalogDefaults';
 import {
   ViewModule,
   UserRole,
@@ -25,6 +28,8 @@ import {
   LedgerEntry,
   KPISummary,
   DeliveryStage,
+  StudioSettings,
+  UserAccount,
 } from '@/types';
 import {
   Shield,
@@ -36,6 +41,7 @@ import {
   Database,
   KeyRound,
   ExternalLink,
+  Users,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -44,6 +50,12 @@ export default function StudioOSHome() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [userRole, setUserRole] = useState<UserRole>('ADMIN_DIRECTOR');
   const [selectedShoot, setSelectedShoot] = useState<ShootBooking | null>(null);
+
+  // Authentication & Settings State
+  const [studioSettings, setStudioSettings] = useState<StudioSettings>(defaultStudioSettings);
+  const [users, setUsers] = useState<UserAccount[]>(defaultUsers);
+  const [currentUser, setCurrentUser] = useState<UserAccount>(defaultUsers[0]);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   // Synced Live State across all modules
   const [quotations, setQuotations] = useState<Quotation[]>(mockQuotations);
@@ -65,9 +77,83 @@ export default function StudioOSHome() {
     setQuotations([quote, ...quotations]);
   };
 
-  // 2. Update quotation
+  // 2. Update quotation with Cascading Updates (Quotation -> ShootBooking Order -> Tax Invoice)
   const handleUpdateQuotation = (quote: Quotation) => {
-    setQuotations(quotations.map((q) => (q.id === quote.id ? quote : q)));
+    // A. Update quote in state
+    setQuotations((prev) => prev.map((q) => (q.id === quote.id ? quote : q)));
+
+    // B. Cascade to linked ShootBooking (Order) if already converted
+    let cascadedBookingFound = false;
+    setBookings((prevBookings) =>
+      prevBookings.map((b) => {
+        const isLinked =
+          b.quotationId === quote.id ||
+          b.client.name.toLowerCase() === quote.clientName.toLowerCase();
+        if (isLinked) {
+          cascadedBookingFound = true;
+          const newTotal = quote.totalPrice;
+          const retainerPaid = b.financialSummary.retainerPaid;
+          const newBalance = Math.max(0, newTotal - retainerPaid);
+          return {
+            ...b,
+            title: `${quote.clientName}: ${quote.packageTitle}`,
+            client: {
+              ...b.client,
+              name: quote.clientName,
+              company: quote.clientName,
+              city: quote.clientCity,
+              phone: quote.clientPhone || b.client.phone,
+              totalBilled: newTotal,
+            },
+            financialSummary: {
+              ...b.financialSummary,
+              totalFee: newTotal,
+              balanceDue: newBalance,
+            },
+          };
+        }
+        return b;
+      })
+    );
+
+    // C. Cascade to linked Invoices
+    setInvoices((prevInvoices) =>
+      prevInvoices.map((inv) => {
+        const isLinked = inv.clientName.toLowerCase() === quote.clientName.toLowerCase();
+        if (isLinked) {
+          const newTotal = quote.totalPrice;
+          const prevPaid = Math.max(0, inv.totalAmount - inv.balanceDue);
+          const newBalance = Math.max(0, newTotal - prevPaid);
+          return {
+            ...inv,
+            clientName: quote.clientName,
+            brand: quote.packageTitle,
+            subtotal: newTotal,
+            totalAmount: newTotal,
+            balanceDue: newBalance,
+            status: newBalance === 0 ? 'PAID' : prevPaid > 0 ? 'PARTIAL' : 'UNPAID',
+            items: [
+              {
+                id: inv.items[0]?.id || 'item-1',
+                description: `${quote.packageTitle} Coverage & High-Res Plates`,
+                quantity: 1,
+                unitPrice: newTotal,
+                total: newTotal,
+              },
+            ],
+          };
+        }
+        return inv;
+      })
+    );
+
+    if (cascadedBookingFound) {
+      alert(
+        `Quotation ${quote.quotationNumber} updated! Cascaded new total (₹${quote.totalPrice.toLocaleString(
+          'en-IN'
+        )}) to linked Booking Order and Tax Invoice.`
+      );
+    }
   };
 
   // 3. Add new client enquiry
@@ -189,7 +275,7 @@ export default function StudioOSHome() {
     alert(`Order ${code} created successfully! Added to Calendar and Invoices.`);
   };
 
-  // 5. Synced Payment Entry Engine (Updates Order + Invoice + Dual General Ledger + KPI Vault)
+  // 5. Synced Payment Entry Engine
   const handleRecordPayment = (payment: {
     reference: string;
     amount: number;
@@ -286,8 +372,22 @@ export default function StudioOSHome() {
     );
   };
 
+  const handleSwitchUser = (user: UserAccount) => {
+    setCurrentUser(user);
+    setUserRole(user.role);
+  };
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-bone dark:bg-obsidian text-carbon dark:text-white">
+      {/* Login & Identity Switch Modal */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        users={users}
+        currentUser={currentUser}
+        onLogin={handleSwitchUser}
+      />
+
       {/* Left Collapsible Studio OS Sidebar */}
       <Sidebar
         activeModule={activeModule}
@@ -295,7 +395,13 @@ export default function StudioOSHome() {
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
         userRole={userRole}
-        setUserRole={setUserRole}
+        setUserRole={(role) => {
+          setUserRole(role);
+          const found = users.find((u) => u.role === role);
+          if (found) setCurrentUser(found);
+        }}
+        currentUser={currentUser}
+        onOpenLoginModal={() => setIsLoginModalOpen(true)}
       />
 
       {/* Main Studio Viewport */}
@@ -308,12 +414,20 @@ export default function StudioOSHome() {
               ENGINE ONLINE
             </span>
             <span className="text-bone-muted dark:text-obsidian-muted hidden sm:inline">
-              // ACTIVE MODE: {userRole === 'ADMIN_DIRECTOR' ? 'STUDIO DIRECTOR [ROOT]' : 'SECOND UNIT [RESTRICTED]'}
+              // ACTIVE IDENTITY: {currentUser.fullName} (@{currentUser.username}) [
+              {currentUser.role === 'ADMIN_DIRECTOR' ? 'ROOT DIRECTOR' : 'RESTRICTED CREW'}]
             </span>
           </div>
 
           <div className="flex items-center gap-4 text-bone-muted dark:text-obsidian-muted">
-            <span className="hidden md:inline">COLOR PIPELINE: 16-BIT PROPHOTO RGB // MANGALORE COASTAL HQ</span>
+            <button
+              onClick={() => setIsLoginModalOpen(true)}
+              className="text-xs uppercase font-mono tracking-wider hover:text-carbon dark:hover:text-white flex items-center gap-1.5 text-vermillion font-bold"
+            >
+              <KeyRound size={12} />
+              <span>Switch User</span>
+            </button>
+            <span className="hidden md:inline">COLOR: PROPHOTO RGB // MANGALORE HQ</span>
             <Link
               href="/about"
               className="text-carbon dark:text-white hover:text-vermillion dark:hover:text-vermillion transition-colors flex items-center gap-1 uppercase font-bold"
@@ -342,6 +456,8 @@ export default function StudioOSHome() {
               enquiries={enquiries}
               bookings={bookings}
               invoices={invoices}
+              settings={studioSettings}
+              currentUser={currentUser}
               onAddQuotation={handleAddQuotation}
               onUpdateQuotation={handleUpdateQuotation}
               onAddEnquiry={handleAddEnquiry}
@@ -360,29 +476,74 @@ export default function StudioOSHome() {
           )}
 
           {activeModule === 'ledger' && (
-            <LedgerView initialLedger={ledger} />
+            <LedgerView
+              initialLedger={ledger}
+              currentUser={currentUser}
+              onOpenLoginModal={() => setIsLoginModalOpen(true)}
+            />
           )}
 
           {activeModule === 'billing' && (
-            <InvoicesView invoices={invoices} />
+            <InvoicesView
+              invoices={invoices}
+              settings={studioSettings}
+              currentUser={currentUser}
+            />
           )}
 
-          {/* Access Control Module */}
+          {/* Access Control Overview Module */}
           {activeModule === 'access' && (
-            <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
-              <div className="pb-6 border-b border-bone-border dark:border-obsidian-border">
-                <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.25em] text-bone-muted dark:text-obsidian-muted mb-1">
-                  <span>Security & Roles</span>
-                  <span>//</span>
-                  <span className="text-vermillion font-bold">Supabase RLS Matrix</span>
+            <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-8 animate-fadeIn">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-bone-border dark:border-obsidian-border">
+                <div>
+                  <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.25em] text-bone-muted dark:text-obsidian-muted mb-1">
+                    <span>Security & Roles</span>
+                    <span>//</span>
+                    <span className="text-vermillion font-bold">Supabase RLS Matrix</span>
+                  </div>
+                  <h1 className="text-3xl md:text-5xl font-serif font-black tracking-tight uppercase">
+                    Access Control
+                  </h1>
                 </div>
-                <h1 className="text-3xl md:text-5xl font-serif font-black tracking-tight uppercase">
-                  Access Control
-                </h1>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setActiveModule('settings')}
+                    className="px-4 py-2.5 bg-carbon text-bone dark:bg-white dark:text-carbon text-xs font-mono uppercase tracking-widest font-bold hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all flex items-center gap-2"
+                  >
+                    <Users size={14} />
+                    <span>Manage User Accounts</span>
+                  </button>
+                  <button
+                    onClick={() => setIsLoginModalOpen(true)}
+                    className="px-4 py-2.5 border border-bone-border dark:border-obsidian-border text-xs font-mono uppercase tracking-widest hover:border-carbon dark:hover:border-white transition-all flex items-center gap-2"
+                  >
+                    <KeyRound size={14} />
+                    <span>Switch Login</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Active Identity Card */}
+              <div className="p-6 bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-vermillion font-bold">
+                    Currently Authenticated Identity
+                  </span>
+                  <h3 className="text-2xl font-serif font-bold uppercase">{currentUser.fullName}</h3>
+                  <p className="text-xs font-mono text-bone-muted dark:text-obsidian-muted">
+                    Username: <code className="text-carbon dark:text-white font-bold">@{currentUser.username}</code> | Assigned Role: <span className="font-bold uppercase text-carbon dark:text-white">{currentUser.role}</span>
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 bg-green-500/10 border border-green-500/30 text-green-600 dark:text-green-400 font-mono text-xs uppercase font-bold">
+                    Engine Session Active
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-6 bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white space-y-4">
+                <div className="p-6 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-4">
                   <div className="flex items-center justify-between">
                     <h2 className="font-serif text-xl font-bold uppercase">Director (Root Principal)</h2>
                     <span className="text-[10px] font-mono uppercase px-2 py-0.5 bg-vermillion text-white font-bold">
@@ -404,14 +565,17 @@ export default function StudioOSHome() {
                     </li>
                   </ul>
                   <button
-                    onClick={() => setUserRole('ADMIN_DIRECTOR')}
+                    onClick={() => {
+                      const admin = users.find((u) => u.username === 'admin') || defaultUsers[0];
+                      handleSwitchUser(admin);
+                    }}
                     className={`w-full py-2.5 text-xs font-mono uppercase tracking-widest ${
-                      userRole === 'ADMIN_DIRECTOR'
+                      currentUser.role === 'ADMIN_DIRECTOR'
                         ? 'bg-carbon text-bone dark:bg-white dark:text-carbon font-bold'
                         : 'border border-bone-border dark:border-obsidian-border hover:border-carbon dark:hover:border-white'
                     }`}
                   >
-                    {userRole === 'ADMIN_DIRECTOR' ? 'Current Active Role' : 'Switch to Director'}
+                    {currentUser.role === 'ADMIN_DIRECTOR' ? 'Current Active Role' : 'Switch to Director (admin)'}
                   </button>
                 </div>
 
@@ -437,14 +601,17 @@ export default function StudioOSHome() {
                     </li>
                   </ul>
                   <button
-                    onClick={() => setUserRole('SECOND_SHOOTER')}
+                    onClick={() => {
+                      const crew = users.find((u) => u.role === 'SECOND_SHOOTER') || defaultUsers[1];
+                      handleSwitchUser(crew);
+                    }}
                     className={`w-full py-2.5 text-xs font-mono uppercase tracking-widest ${
-                      userRole === 'SECOND_SHOOTER'
+                      currentUser.role === 'SECOND_SHOOTER'
                         ? 'bg-carbon text-bone dark:bg-white dark:text-carbon font-bold'
                         : 'border border-bone-border dark:border-obsidian-border hover:border-carbon dark:hover:border-white'
                     }`}
                   >
-                    {userRole === 'SECOND_SHOOTER' ? 'Current Active Role' : 'Switch to Second Shooter'}
+                    {currentUser.role === 'SECOND_SHOOTER' ? 'Current Active Role' : 'Switch to Second Shooter'}
                   </button>
                 </div>
               </div>
@@ -453,71 +620,14 @@ export default function StudioOSHome() {
 
           {/* Settings Module */}
           {activeModule === 'settings' && (
-            <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
-              <div className="pb-6 border-b border-bone-border dark:border-obsidian-border">
-                <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.25em] text-bone-muted dark:text-obsidian-muted mb-1">
-                  <span>Hardware & Color</span>
-                  <span>//</span>
-                  <span className="text-vermillion font-bold">System Parameters</span>
-                </div>
-                <h1 className="text-3xl md:text-5xl font-serif font-black tracking-tight uppercase">
-                  Studio Settings
-                </h1>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs font-mono">
-                <div className="p-6 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-4">
-                  <h2 className="font-serif text-lg font-bold uppercase text-carbon dark:text-white">
-                    Color Profile & Raw Conversion
-                  </h2>
-                  <div>
-                    <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                      Default Working Color Space
-                    </label>
-                    <input
-                      type="text"
-                      readOnly
-                      value="ProPhoto RGB (16-bit D65 Linear)"
-                      className="w-full p-2.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white font-bold"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                      Tether Backup Redundancy
-                    </label>
-                    <input
-                      type="text"
-                      readOnly
-                      value="Triple Mirror RAID (Dual On-Set NVMe + Cold Cloud Sync)"
-                      className="w-full p-2.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="p-6 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-4">
-                  <h2 className="font-serif text-lg font-bold uppercase text-carbon dark:text-white">
-                    Supabase Database Connection
-                  </h2>
-                  <div>
-                    <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                      Supabase Instance Status
-                    </label>
-                    <div className="p-2.5 bg-green-500/10 border border-green-500/30 text-green-600 dark:text-green-400 font-bold flex items-center gap-2">
-                      <Database size={14} />
-                      <span>Schema Defined (`schema.sql` ready to sync)</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                      Environment Keys
-                    </label>
-                    <p className="text-[11px] text-bone-muted dark:text-obsidian-muted">
-                      Configured to read `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` when deployed live.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <SettingsView
+              settings={studioSettings}
+              onUpdateSettings={setStudioSettings}
+              users={users}
+              currentUser={currentUser}
+              onUpdateUsers={setUsers}
+              onOpenLoginModal={() => setIsLoginModalOpen(true)}
+            />
           )}
         </div>
       </main>

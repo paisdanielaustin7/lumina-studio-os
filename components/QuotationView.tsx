@@ -26,6 +26,7 @@ import {
   ShieldAlert,
   ArrowUpRight,
   Search,
+  Lock,
 } from 'lucide-react';
 import {
   Quotation,
@@ -37,6 +38,8 @@ import {
   DeliverableItem,
   CrewRequirement,
   DeliveryStage,
+  StudioSettings,
+  UserAccount,
 } from '@/types';
 import { defaultCatalog, CatalogTemplate } from '@/lib/catalogDefaults';
 import { generateQuotationPDF } from '@/lib/pdfGenerator';
@@ -46,6 +49,8 @@ interface QuotationViewProps {
   enquiries: Enquiry[];
   bookings: ShootBooking[];
   invoices: Invoice[];
+  settings: StudioSettings;
+  currentUser: UserAccount;
   onAddQuotation: (quote: Quotation) => void;
   onUpdateQuotation: (quote: Quotation) => void;
   onAddEnquiry: (enquiry: Enquiry) => void;
@@ -73,6 +78,8 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
   enquiries,
   bookings,
   invoices,
+  settings,
+  currentUser,
   onAddQuotation,
   onUpdateQuotation,
   onAddEnquiry,
@@ -100,11 +107,14 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
   const [enqCity, setEnqCity] = useState('Mangalore');
   const [enqDate, setEnqDate] = useState('2026-11-20');
   const [enqType, setEnqType] = useState('Catholic Nuptials & Reception');
-  const [enqBudget, setEnqBudget] = useState('90000');
+  const [enqBudget, setEnqBudget] = useState('38000');
   const [enqNotes, setEnqNotes] = useState('');
 
-  // New Quotation Modal State
-  const [showCreateQuoteModal, setShowCreateQuoteModal] = useState(false);
+  // Create / Edit Quotation Modal State
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [isEditingQuote, setIsEditingQuote] = useState(false);
+  const [editQuoteId, setEditQuoteId] = useState<string | null>(null);
+
   const [qNumber, setQNumber] = useState(`Q NO. 0${quotations.length + 7}`);
   const [qDate, setQDate] = useState('6 August , 2026');
   const [qClientName, setQClientName] = useState('');
@@ -112,7 +122,7 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
   const [qClientPhone, setQClientPhone] = useState('');
   const [qClientEmail, setQClientEmail] = useState('');
   const [qPackageTitle, setQPackageTitle] = useState('PACKAGE');
-  const [qTotalPrice, setQTotalPrice] = useState('90000');
+  const [qTotalPrice, setQTotalPrice] = useState('38000');
   const [qAdvancePct, setQAdvancePct] = useState(50);
   const [qRequirements, setQRequirements] = useState<QuotationItem[]>(catalog.standardRequirements);
   const [qDeliverables, setQDeliverables] = useState<DeliverableItem[]>(catalog.standardDeliverables);
@@ -120,12 +130,13 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
 
   // Manual Payment Entry Modal State
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState('45000');
+  const [paymentAmount, setPaymentAmount] = useState('19000');
   const [paymentMethod, setPaymentMethod] = useState('UPI / GPay');
   const [paymentNotes, setPaymentNotes] = useState('50% Advance booking confirmation');
   const [paymentTargetQuote, setPaymentTargetQuote] = useState<Quotation | null>(null);
 
   const formatINR = (val: number) => {
+    if (!currentUser.canViewFinances) return 'Rs *** /-';
     return 'Rs ' + new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(val) + ' /-';
   };
 
@@ -137,12 +148,12 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
       id: `enq-${Date.now()}`,
       enquiryNumber: `ENQ-2026-${Math.floor(100 + Math.random() * 900)}`,
       clientName: enqClientName,
-      phone: enqPhone || '+91 98450 00000',
+      phone: enqPhone || '+91 98450 12849',
       email: enqEmail || `${enqClientName.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
       city: enqCity,
       eventDate: enqDate,
       eventType: enqType,
-      estimatedBudget: parseFloat(enqBudget) || 90000,
+      estimatedBudget: Math.min(44000, parseFloat(enqBudget) || 38000),
       status: 'NEW',
       notes: enqNotes,
       createdAt: new Date().toISOString().split('T')[0],
@@ -158,50 +169,100 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
     setEnqPhone('');
     setEnqEmail('');
     setEnqCity('Mangalore');
-    setEnqBudget('90000');
+    setEnqBudget('38000');
     setEnqNotes('');
   };
 
+  // Launch pre-filled quote from enquiry
   const handleLaunchQuoteFromEnquiry = (enquiry: Enquiry) => {
+    setIsEditingQuote(false);
+    setEditQuoteId(null);
+    setQNumber(`Q NO. 0${quotations.length + 8}`);
     setQClientName(enquiry.clientName);
     setQClientCity(enquiry.city);
     setQClientPhone(enquiry.phone);
     setQClientEmail(enquiry.email);
-    setQTotalPrice(enquiry.estimatedBudget.toString());
+    setQTotalPrice(Math.min(44000, enquiry.estimatedBudget).toString());
     setQPackageTitle(enquiry.eventType.toUpperCase().includes('WEDDING') ? 'WEDDING PACKAGE' : 'PACKAGE');
     setQRequirements(catalog.standardRequirements);
     setQDeliverables(catalog.standardDeliverables);
     setQCrew(catalog.standardCrew);
-    setShowCreateQuoteModal(true);
+    setShowQuoteModal(true);
   };
 
+  // Launch editor for existing quote (Requirement 2)
+  const handleOpenEditQuote = (quote: Quotation) => {
+    setIsEditingQuote(true);
+    setEditQuoteId(quote.id);
+    setQNumber(quote.quotationNumber);
+    setQDate(quote.date);
+    setQClientName(quote.clientName);
+    setQClientCity(quote.clientCity);
+    setQClientPhone(quote.clientPhone || '');
+    setQClientEmail(quote.clientEmail || '');
+    setQPackageTitle(quote.packageTitle);
+    setQTotalPrice(Math.min(44000, quote.totalPrice).toString());
+    setQAdvancePct(quote.advancePercentage || 50);
+    setQRequirements(quote.requirements);
+    setQDeliverables(quote.deliverables);
+    setQCrew(quote.crewAllocation);
+    setShowQuoteModal(true);
+  };
+
+  // Save quotation (either new or updated existing)
   const handleSaveQuotation = (e: React.FormEvent) => {
     e.preventDefault();
     if (!qClientName) return;
 
-    const createdQuote: Quotation = {
-      id: `q-${Date.now()}`,
-      quotationNumber: qNumber,
-      date: qDate,
-      clientName: qClientName,
-      clientCity: qClientCity,
-      clientPhone: qClientPhone,
-      clientEmail: qClientEmail,
-      packageTitle: qPackageTitle,
-      requirements: qRequirements,
-      deliverables: qDeliverables,
-      crewAllocation: qCrew,
-      termsAndConditions: catalog.standardTerms,
-      totalPrice: parseFloat(qTotalPrice) || 90000,
-      advancePercentage: qAdvancePct,
-      status: 'SENT',
-      contactPerson: catalog.defaultContactPerson,
-      contactPhone: catalog.defaultContactPhone,
-    };
+    // Strict constraint: Cap price below 45000
+    const parsedPrice = Math.min(44000, Math.max(1000, parseFloat(qTotalPrice) || 38000));
 
-    onAddQuotation(createdQuote);
-    setSelectedQuote(createdQuote);
-    setShowCreateQuoteModal(false);
+    if (isEditingQuote && editQuoteId) {
+      const existing = quotations.find((q) => q.id === editQuoteId);
+      const updatedQuote: Quotation = {
+        ...existing!,
+        quotationNumber: qNumber,
+        date: qDate,
+        clientName: qClientName,
+        clientCity: qClientCity,
+        clientPhone: qClientPhone,
+        clientEmail: qClientEmail,
+        packageTitle: qPackageTitle,
+        requirements: qRequirements,
+        deliverables: qDeliverables,
+        crewAllocation: qCrew,
+        totalPrice: parsedPrice,
+        advancePercentage: qAdvancePct,
+      };
+
+      onUpdateQuotation(updatedQuote);
+      setSelectedQuote(updatedQuote);
+    } else {
+      const createdQuote: Quotation = {
+        id: `q-${Date.now()}`,
+        quotationNumber: qNumber,
+        date: qDate,
+        clientName: qClientName,
+        clientCity: qClientCity,
+        clientPhone: qClientPhone,
+        clientEmail: qClientEmail,
+        packageTitle: qPackageTitle,
+        requirements: qRequirements,
+        deliverables: qDeliverables,
+        crewAllocation: qCrew,
+        termsAndConditions: settings.termsAndConditions || catalog.standardTerms,
+        totalPrice: parsedPrice,
+        advancePercentage: qAdvancePct,
+        status: 'SENT',
+        contactPerson: settings.contactPerson,
+        contactPhone: settings.contactPhone,
+      };
+
+      onAddQuotation(createdQuote);
+      setSelectedQuote(createdQuote);
+    }
+
+    setShowQuoteModal(false);
   };
 
   const handleRecordPaymentSubmit = (e: React.FormEvent) => {
@@ -240,53 +301,63 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
   });
 
   return (
-    <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-bone-border dark:border-obsidian-border">
+    <div className="p-4 lg:p-7 max-w-7xl mx-auto space-y-6">
+      {/* Top Header - Compact editorial layout */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-4 border-b border-bone-border dark:border-obsidian-border">
         <div>
-          <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.25em] text-bone-muted dark:text-obsidian-muted mb-1">
+          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-bone-muted dark:text-obsidian-muted mb-0.5">
             <span>Commercial Operations</span>
             <span>//</span>
-            <span className="text-vermillion font-bold">Enquiries, Quotations & Deliveries</span>
+            <span className="text-vermillion font-bold">LUMINA Quotation Engine</span>
+            <span>//</span>
+            <span>Mangalore Coastal Atelier</span>
           </div>
-          <h1 className="text-3xl md:text-5xl font-serif font-black tracking-tight text-carbon dark:text-white uppercase">
-            Quotation Engine
+          <h1 className="text-2xl md:text-3xl font-serif font-black tracking-tight text-carbon dark:text-white uppercase">
+            Quotations & Order Lifecycle
           </h1>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
           <button
             onClick={() => setShowEnquiryModal(true)}
-            className="px-4 py-2.5 text-xs font-mono uppercase tracking-widest border border-bone-border dark:border-obsidian-border hover:border-carbon dark:hover:border-white transition-all flex items-center gap-2"
+            className="px-3 py-1.5 border border-bone-border dark:border-obsidian-border hover:border-carbon dark:hover:border-white transition-all flex items-center gap-1.5 uppercase"
           >
-            <Plus size={14} />
+            <Plus size={12} />
             <span>New Enquiry</span>
           </button>
           <button
+            disabled={!currentUser.canEditQuotesAndOrders}
             onClick={() => {
+              setIsEditingQuote(false);
+              setEditQuoteId(null);
+              setQNumber(`Q NO. 0${quotations.length + 8}`);
               setQClientName('');
               setQClientCity('Mangalore');
               setQClientPhone('');
-              setQTotalPrice('90000');
+              setQTotalPrice('38000');
               setQRequirements(catalog.standardRequirements);
               setQDeliverables(catalog.standardDeliverables);
               setQCrew(catalog.standardCrew);
-              setShowCreateQuoteModal(true);
+              setShowQuoteModal(true);
             }}
-            className="px-4 py-2.5 text-xs font-mono uppercase tracking-widest bg-carbon text-bone dark:bg-white dark:text-carbon hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all flex items-center gap-2"
+            className={`px-3.5 py-1.5 uppercase font-bold tracking-wider flex items-center gap-1.5 transition-all ${
+              currentUser.canEditQuotesAndOrders
+                ? 'bg-carbon text-bone dark:bg-white dark:text-carbon hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white'
+                : 'opacity-50 cursor-not-allowed bg-bone-surface text-bone-muted'
+            }`}
           >
-            <FileText size={14} />
-            <span>Generate Quotation</span>
+            {currentUser.canEditQuotesAndOrders ? <FileText size={12} /> : <Lock size={12} />}
+            <span>Generate Quote</span>
           </button>
         </div>
       </div>
 
       {/* Primary Module Tabs */}
-      <div className="flex items-center border-b border-bone-border dark:border-obsidian-border text-xs font-mono overflow-x-auto">
+      <div className="flex items-center border-b border-bone-border dark:border-obsidian-border text-[11px] font-mono overflow-x-auto">
         <button
           onClick={() => setActiveTab('quotations')}
-          className={`pb-3 px-4 uppercase tracking-wider font-bold transition-all relative whitespace-nowrap ${
+          className={`pb-2.5 px-3.5 uppercase tracking-wider font-bold transition-all relative whitespace-nowrap ${
             activeTab === 'quotations'
               ? 'text-carbon dark:text-white border-b-2 border-vermillion'
               : 'text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white'
@@ -296,76 +367,76 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('enquiries')}
-          className={`pb-3 px-4 uppercase tracking-wider font-bold transition-all relative whitespace-nowrap ${
+          className={`pb-2.5 px-3.5 uppercase tracking-wider font-bold transition-all relative whitespace-nowrap ${
             activeTab === 'enquiries'
               ? 'text-carbon dark:text-white border-b-2 border-vermillion'
               : 'text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white'
           }`}
         >
-          Enquiries CRM ({enquiries.length})
+          Enquiries ({enquiries.length})
         </button>
         <button
           onClick={() => setActiveTab('orders')}
-          className={`pb-3 px-4 uppercase tracking-wider font-bold transition-all relative whitespace-nowrap ${
+          className={`pb-2.5 px-3.5 uppercase tracking-wider font-bold transition-all relative whitespace-nowrap ${
             activeTab === 'orders'
               ? 'text-carbon dark:text-white border-b-2 border-vermillion'
               : 'text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white'
           }`}
         >
-          Orders & Delivery Pipeline ({bookings.length})
+          Orders & Deliveries ({bookings.length})
         </button>
         <button
           onClick={() => setActiveTab('catalog')}
-          className={`pb-3 px-4 uppercase tracking-wider font-bold transition-all relative whitespace-nowrap ${
+          className={`pb-2.5 px-3.5 uppercase tracking-wider font-bold transition-all relative whitespace-nowrap ${
             activeTab === 'catalog'
               ? 'text-carbon dark:text-white border-b-2 border-vermillion'
               : 'text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white'
           }`}
         >
-          Pre-defined Catalog & Items
+          Catalog Presets
         </button>
       </div>
 
       {/* ========================================================================= */}
-      {/* TAB 1: ACTIVE QUOTATIONS & VISUAL INSPECTOR                               */}
+      {/* TAB 1: ACTIVE QUOTATIONS & EDITABLE INSPECTOR                              */}
       {/* ========================================================================= */}
       {activeTab === 'quotations' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Quotation Cards List (5 cols) */}
-          <div className="lg:col-span-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-widest text-bone-muted dark:text-obsidian-muted">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left Column: Compact Quotation List (5 cols) */}
+          <div className="lg:col-span-5 space-y-3">
+            <div className="flex items-center justify-between text-[11px] font-mono">
+              <span className="uppercase tracking-widest text-bone-muted dark:text-obsidian-muted">
                 Issued Packages ({filteredQuotes.length})
               </span>
-              <div className="flex items-center gap-2 border border-bone-border dark:border-obsidian-border px-2 py-1 text-[11px] font-mono">
-                <Search size={12} className="text-bone-muted" />
+              <div className="flex items-center gap-1.5 border border-bone-border dark:border-obsidian-border px-2 py-0.5">
+                <Search size={11} className="text-bone-muted" />
                 <input
                   type="text"
-                  placeholder="Filter by name..."
+                  placeholder="Filter name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent outline-none w-28 text-carbon dark:text-white"
+                  className="bg-transparent outline-none w-24 text-carbon dark:text-white text-[11px]"
                 />
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               {filteredQuotes.map((q) => {
                 const isSelected = selectedQuote.id === q.id;
                 return (
                   <div
                     key={q.id}
                     onClick={() => setSelectedQuote(q)}
-                    className={`p-5 border cursor-pointer transition-all ${
+                    className={`p-3.5 border cursor-pointer transition-all ${
                       isSelected
-                        ? 'border-2 border-carbon dark:border-white bg-bone-card dark:bg-obsidian-card shadow-brutalist-light dark:shadow-brutalist-dark'
+                        ? 'border-2 border-carbon dark:border-white bg-bone-card dark:bg-obsidian-card shadow-sm'
                         : 'border-bone-border dark:border-obsidian-border bg-bone-card/60 dark:bg-obsidian-card/40 hover:border-carbon dark:hover:border-white'
                     }`}
                   >
-                    <div className="flex items-center justify-between text-xs font-mono mb-2">
+                    <div className="flex items-center justify-between text-[11px] font-mono mb-1">
                       <span className="font-bold text-vermillion">{q.quotationNumber}</span>
                       <span
-                        className={`text-[9px] px-2 py-0.5 uppercase tracking-widest font-bold border ${
+                        className={`text-[8.5px] px-1.5 py-0.2 uppercase tracking-widest font-bold border ${
                           q.status === 'ACCEPTED' || q.status === 'CONVERTED'
                             ? 'border-green-600/30 text-green-700 dark:text-green-400 bg-green-500/10'
                             : 'border-amber-500/30 text-amber-700 dark:text-amber-400 bg-amber-500/10'
@@ -375,15 +446,15 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
                       </span>
                     </div>
 
-                    <h3 className="font-serif text-lg font-bold text-carbon dark:text-white">
+                    <h3 className="font-serif text-base font-bold text-carbon dark:text-white">
                       {q.clientName}
                     </h3>
-                    <p className="text-xs font-mono text-bone-muted dark:text-obsidian-muted">
+                    <p className="text-[10px] font-mono text-bone-muted dark:text-obsidian-muted">
                       {q.clientCity} // {q.date}
                     </p>
 
-                    <div className="mt-4 pt-3 border-t border-bone-border dark:border-obsidian-border flex items-center justify-between text-xs font-mono">
-                      <span className="text-bone-muted dark:text-obsidian-muted">Package Total</span>
+                    <div className="mt-2 pt-2 border-t border-bone-border dark:border-obsidian-border flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-bone-muted dark:text-obsidian-muted">Total</span>
                       <span className="font-bold text-carbon dark:text-white">{formatINR(q.totalPrice)}</span>
                     </div>
                   </div>
@@ -392,59 +463,58 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
             </div>
           </div>
 
-          {/* Right Column: Visual Preview Deck (Matches Attached PDF Exactly!) */}
-          <div className="lg:col-span-7 bg-[#f3f7f4] text-[#0f1714] border-2 border-carbon dark:border-white p-6 lg:p-10 shadow-2xl space-y-6">
-            {/* Top Bar with Real Sample Header */}
-            <div className="flex items-start justify-between border-b border-[#d8e2dc] pb-4">
+          {/* Right Column: Visual Preview Deck (Strictly LUMINA Branding) */}
+          <div className="lg:col-span-7 bg-[#f3f7f4] text-[#0f1714] border-2 border-carbon dark:border-white p-5 lg:p-7 shadow-xl space-y-4">
+            {/* Header: Pure LUMINA Branding */}
+            <div className="flex items-start justify-between border-b border-[#d8e2dc] pb-3">
               <div>
-                <span className="font-serif font-black text-2xl tracking-widest uppercase block">
-                  VOWS
+                <span className="font-serif font-black text-xl tracking-widest uppercase block">
+                  {settings.studioName}
                 </span>
-                <span className="text-[9px] font-mono text-[#6e7d76] uppercase tracking-wider block">
-                  Wedding Cinemastory & Stills // Mangalore
+                <span className="text-[8.5px] font-mono text-[#6e7d76] uppercase tracking-wider block">
+                  {settings.tagline}
                 </span>
               </div>
               <div className="text-right">
-                <span className="font-mono text-sm font-bold block">{selectedQuote.quotationNumber}</span>
-                <span className="text-[10px] font-mono text-[#6e7d76]">Official Quotation</span>
+                <span className="font-mono text-xs font-bold block">{selectedQuote.quotationNumber}</span>
+                <span className="text-[9px] font-mono text-[#6e7d76]">Official Quotation</span>
               </div>
             </div>
 
             {/* Title & Date */}
             <div>
-              <h2 className="font-serif text-4xl lg:text-5xl font-black uppercase tracking-tight">
+              <h2 className="font-serif text-3xl lg:text-4xl font-black uppercase tracking-tight">
                 {selectedQuote.packageTitle}
               </h2>
-              <p className="text-xs font-mono font-bold mt-1">Date: {selectedQuote.date}</p>
+              <p className="text-[11px] font-mono font-bold mt-0.5">Date: {selectedQuote.date}</p>
             </div>
 
             {/* Quoted to */}
-            <div className="font-mono text-xs space-y-0.5">
-              <span className="font-bold uppercase text-[10px] text-[#6e7d76] block mb-1">
+            <div className="font-mono text-[11px] space-y-0.5">
+              <span className="font-bold uppercase text-[9.5px] text-[#6e7d76] block mb-0.5">
                 Quoted to:
               </span>
-              <p className="font-bold text-sm text-[#0f1714]">{selectedQuote.clientName}</p>
+              <p className="font-bold text-xs text-[#0f1714]">{selectedQuote.clientName}</p>
               <p className="text-[#3b4741]">{selectedQuote.clientCity}</p>
-              {selectedQuote.clientPhone && <p className="text-[#6e7d76]">{selectedQuote.clientPhone}</p>}
             </div>
 
             {/* Requirements Table */}
             <div className="border border-[#d8e2dc] rounded-sm overflow-hidden bg-white/70">
-              <div className="bg-[#e4ede7] px-4 py-2 flex justify-between font-mono text-xs font-bold text-[#19231e]">
+              <div className="bg-[#e4ede7] px-3.5 py-1.5 flex justify-between font-mono text-[11px] font-bold text-[#19231e]">
                 <span>Requirement</span>
                 <span>Price</span>
               </div>
-              <div className="divide-y divide-[#e4ede7] text-xs font-mono">
+              <div className="divide-y divide-[#e4ede7] text-[11px] font-mono">
                 {selectedQuote.requirements
                   .filter((r) => r.included)
                   .map((req) => (
-                    <div key={req.id} className="px-4 py-2 flex justify-between">
+                    <div key={req.id} className="px-3.5 py-1.5 flex justify-between">
                       <span>{req.name}</span>
                       <span className="text-right">{req.price || '-'}</span>
                     </div>
                   ))}
               </div>
-              <div className="bg-[#e4ede7] px-4 py-2.5 flex justify-between font-mono text-xs font-black text-[#0f1714] border-t border-[#d8e2dc]">
+              <div className="bg-[#e4ede7] px-3.5 py-2 flex justify-between font-mono text-[11px] font-black text-[#0f1714] border-t border-[#d8e2dc]">
                 <span>Total</span>
                 <span>{formatINR(selectedQuote.totalPrice)}</span>
               </div>
@@ -452,36 +522,36 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
 
             {/* Deliverables Table */}
             <div>
-              <h4 className="text-center font-serif font-bold text-sm uppercase tracking-wider mb-2">
+              <h4 className="text-center font-serif font-bold text-xs uppercase tracking-wider mb-1.5">
                 Deliverables
               </h4>
               <div className="border border-[#d8e2dc] rounded-sm overflow-hidden bg-white/70">
-                <div className="bg-[#e4ede7] px-4 py-2 flex justify-between font-mono text-xs font-bold text-[#19231e]">
+                <div className="bg-[#e4ede7] px-3.5 py-1.5 flex justify-between font-mono text-[11px] font-bold text-[#19231e]">
                   <span>Items</span>
                   <span>Details</span>
                 </div>
-                <div className="divide-y divide-[#e4ede7] text-xs font-mono">
+                <div className="divide-y divide-[#e4ede7] text-[11px] font-mono">
                   {selectedQuote.deliverables
                     .filter((d) => d.included)
                     .map((del) => (
-                      <div key={del.id} className="px-4 py-2 flex flex-col sm:flex-row sm:justify-between gap-1">
+                      <div key={del.id} className="px-3.5 py-1.5 flex flex-col sm:flex-row sm:justify-between gap-0.5">
                         <span className="font-bold">{del.item}</span>
-                        <span className="text-[#5a6962] text-[11px] italic">{del.details}</span>
+                        <span className="text-[#5a6962] text-[10px] italic">{del.details}</span>
                       </div>
                     ))}
                 </div>
               </div>
             </div>
 
-            {/* Crew Members (Page 2 Preview Section) */}
+            {/* Crew Members */}
             <div>
-              <div className="bg-[#e4ede7] px-4 py-2 flex justify-between font-mono text-xs font-bold text-[#19231e] border border-[#d8e2dc]">
+              <div className="bg-[#e4ede7] px-3.5 py-1.5 flex justify-between font-mono text-[11px] font-bold text-[#19231e] border border-[#d8e2dc]">
                 <span>Crew Members</span>
                 <span>Number</span>
               </div>
-              <div className="border-x border-b border-[#d8e2dc] divide-y divide-[#e4ede7] text-xs font-mono bg-white/70">
+              <div className="border-x border-b border-[#d8e2dc] divide-y divide-[#e4ede7] text-[11px] font-mono bg-white/70">
                 {selectedQuote.crewAllocation.map((crew) => (
-                  <div key={crew.id} className="px-4 py-2 flex justify-between">
+                  <div key={crew.id} className="px-3.5 py-1.5 flex justify-between">
                     <span>{crew.role}</span>
                     <span className="font-bold">{crew.number}</span>
                   </div>
@@ -489,57 +559,78 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
               </div>
             </div>
 
-            {/* Terms Summary Tag */}
-            <div className="p-3 bg-white/80 border border-[#d8e2dc] text-[10px] font-mono text-[#5a6962] space-y-1">
+            {/* Terms Summary */}
+            <div className="p-2.5 bg-white/80 border border-[#d8e2dc] text-[9.5px] font-mono text-[#5a6962] space-y-0.5">
               <span className="font-bold uppercase text-[#0f1714] block">
                 Terms & Conditions Summary ({selectedQuote.termsAndConditions.length} Points Verified)
               </span>
-              <p>• 50% advance secures date. Balance due on or before event date.</p>
-              <p>• Couple needs to provide a Hard Drive for RAW data collection (6-month retention).</p>
+              <p>• 50% advance confirms booking. Balance due on/before event date.</p>
+              <p>• Hard drive required for RAW data collection (6-month retention liability).</p>
             </div>
 
             {/* Signoff Footer */}
-            <div className="pt-4 border-t border-[#d8e2dc] flex items-center justify-between text-xs font-mono font-bold">
-              <span>{selectedQuote.contactPerson}</span>
-              <span>{selectedQuote.contactPhone}</span>
+            <div className="pt-2 border-t border-[#d8e2dc] flex items-center justify-between text-[11px] font-mono font-bold">
+              <span>{selectedQuote.contactPerson || settings.contactPerson}</span>
+              <span>{selectedQuote.contactPhone || settings.contactPhone}</span>
             </div>
 
-            {/* Interactive Operations Deck (PDF Export, Conversion & Payment Sync) */}
-            <div className="pt-6 border-t-2 border-carbon space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Action Bar with Edit, PDF Export, Conversion & Payment Sync */}
+            <div className="pt-3 border-t border-[#d8e2dc] space-y-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {/* 1. Edit Quote Button */}
                 <button
-                  onClick={() => generateQuotationPDF(selectedQuote)}
-                  className="py-3 px-4 bg-carbon text-bone hover:bg-vermillion transition-all text-xs font-mono uppercase font-bold tracking-widest flex items-center justify-center gap-2"
+                  disabled={!currentUser.canEditQuotesAndOrders}
+                  onClick={() => handleOpenEditQuote(selectedQuote)}
+                  className={`py-2 px-2.5 text-[10px] font-mono uppercase font-bold tracking-wider flex items-center justify-center gap-1.5 border border-[#0f1714] transition-all ${
+                    currentUser.canEditQuotesAndOrders ? 'hover:bg-[#0f1714] hover:text-white' : 'opacity-40 cursor-not-allowed'
+                  }`}
+                  title={!currentUser.canEditQuotesAndOrders ? 'Restricted by Admin' : 'Edit quote items & prices'}
                 >
-                  <Download size={14} />
-                  <span>Download 2-Page PDF</span>
+                  <Edit3 size={11} />
+                  <span>Edit Quote</span>
                 </button>
 
+                {/* 2. Download PDF Button */}
+                <button
+                  onClick={() => generateQuotationPDF(selectedQuote, settings)}
+                  className="py-2 px-2.5 bg-[#0f1714] text-white hover:bg-vermillion transition-all text-[10px] font-mono uppercase font-bold tracking-wider flex items-center justify-center gap-1.5"
+                >
+                  <Download size={11} />
+                  <span>2-Page PDF</span>
+                </button>
+
+                {/* 3. Convert to Order Button */}
                 <button
                   onClick={() => onConvertQuotationToBooking(selectedQuote)}
-                  disabled={selectedQuote.status === 'CONVERTED'}
-                  className={`py-3 px-4 text-xs font-mono uppercase font-bold tracking-widest flex items-center justify-center gap-2 transition-all ${
+                  disabled={selectedQuote.status === 'CONVERTED' || !currentUser.canEditQuotesAndOrders}
+                  className={`py-2 px-2.5 text-[10px] font-mono uppercase font-bold tracking-wider flex items-center justify-center gap-1.5 transition-all ${
                     selectedQuote.status === 'CONVERTED'
-                      ? 'bg-green-600/20 text-green-800 border border-green-600/40 cursor-not-allowed'
-                      : 'border-2 border-carbon hover:bg-carbon hover:text-white'
+                      ? 'bg-green-700/20 text-green-900 border border-green-700/40 cursor-not-allowed'
+                      : 'border border-[#0f1714] hover:bg-[#0f1714] hover:text-white'
                   }`}
                 >
-                  <CheckCircle size={14} />
-                  <span>{selectedQuote.status === 'CONVERTED' ? 'Order Active' : 'Convert to Order'}</span>
+                  <CheckCircle size={11} />
+                  <span>{selectedQuote.status === 'CONVERTED' ? 'Order Active' : 'Convert Order'}</span>
                 </button>
 
+                {/* 4. Record Payment Button */}
                 <button
+                  disabled={!currentUser.canViewFinances}
                   onClick={() => {
                     setPaymentTargetQuote(selectedQuote);
                     setPaymentAmount(
-                      ((selectedQuote.totalPrice * selectedQuote.advancePercentage) / 100).toString()
+                      Math.round(
+                        (selectedQuote.totalPrice * selectedQuote.advancePercentage) / 100
+                      ).toString()
                     );
                     setShowPaymentModal(true);
                   }}
-                  className="py-3 px-4 bg-vermillion text-white hover:bg-vermillion-glow transition-all text-xs font-mono uppercase font-bold tracking-widest flex items-center justify-center gap-2"
+                  className={`py-2 px-2.5 bg-vermillion text-white hover:bg-vermillion-glow transition-all text-[10px] font-mono uppercase font-bold tracking-wider flex items-center justify-center gap-1.5 ${
+                    !currentUser.canViewFinances ? 'opacity-40 cursor-not-allowed' : ''
+                  }`}
                 >
-                  <CreditCard size={14} />
-                  <span>Record Payment</span>
+                  <CreditCard size={11} />
+                  <span>Add Payment</span>
                 </button>
               </div>
             </div>
@@ -551,31 +642,31 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
       {/* TAB 2: ENQUIRIES CRM PIPELINE                                             */}
       {/* ========================================================================= */}
       {activeTab === 'enquiries' && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono uppercase tracking-widest text-bone-muted dark:text-obsidian-muted">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between text-xs font-mono">
+            <span className="uppercase tracking-widest text-bone-muted dark:text-obsidian-muted">
               Incoming Coastal Enquiries ({enquiries.length})
             </span>
             <button
               onClick={() => setShowEnquiryModal(true)}
-              className="px-3 py-1.5 bg-carbon text-bone dark:bg-white dark:text-carbon text-xs font-mono uppercase tracking-wider flex items-center gap-1.5"
+              className="px-3 py-1 bg-carbon text-bone dark:bg-white dark:text-carbon text-[11px] font-mono uppercase tracking-wider flex items-center gap-1"
             >
-              <Plus size={12} />
-              <span>Log New Client Lead</span>
+              <Plus size={11} />
+              <span>Log Lead</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {enquiries.map((enq) => (
               <div
                 key={enq.id}
-                className="p-5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-4 hover:border-carbon dark:hover:border-white transition-all flex flex-col justify-between"
+                className="p-4 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-3 hover:border-carbon dark:hover:border-white transition-all flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between text-xs font-mono mb-2">
+                  <div className="flex items-center justify-between text-[11px] font-mono mb-1">
                     <span className="font-bold text-carbon dark:text-white">{enq.enquiryNumber}</span>
                     <span
-                      className={`text-[9px] px-2 py-0.5 uppercase tracking-widest font-bold border ${
+                      className={`text-[8.5px] px-1.5 py-0.2 uppercase tracking-widest font-bold border ${
                         enq.status === 'CONVERTED'
                           ? 'border-green-600/30 text-green-700 dark:text-green-400 bg-green-500/10'
                           : enq.status === 'QUOTED'
@@ -587,51 +678,46 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
                     </span>
                   </div>
 
-                  <h3 className="font-serif text-lg font-bold text-carbon dark:text-white">
+                  <h3 className="font-serif text-base font-bold text-carbon dark:text-white">
                     {enq.clientName}
                   </h3>
-                  <p className="text-xs font-mono text-bone-muted dark:text-obsidian-muted">
+                  <p className="text-[11px] font-mono text-bone-muted dark:text-obsidian-muted">
                     {enq.eventType}
                   </p>
 
-                  <div className="mt-4 space-y-1 text-xs font-mono text-carbon/80 dark:text-bone/80">
+                  <div className="mt-3 space-y-1 text-[11px] font-mono text-carbon/80 dark:text-bone/80">
                     <div className="flex items-center gap-2">
-                      <Calendar size={12} className="text-vermillion" />
-                      <span>Event: {enq.eventDate}</span>
+                      <Calendar size={11} className="text-vermillion" />
+                      <span>{enq.eventDate}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <MapPin size={12} className="text-vermillion" />
+                      <MapPin size={11} className="text-vermillion" />
                       <span>{enq.city}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Phone size={12} className="text-bone-muted" />
+                      <Phone size={11} className="text-bone-muted" />
                       <span>{enq.phone}</span>
                     </div>
                   </div>
-
-                  {enq.notes && (
-                    <p className="mt-3 p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-[11px] font-mono text-bone-muted dark:text-obsidian-muted line-clamp-2">
-                      {enq.notes}
-                    </p>
-                  )}
                 </div>
 
-                <div className="pt-4 border-t border-bone-border dark:border-obsidian-border flex items-center justify-between">
+                <div className="pt-3 border-t border-bone-border dark:border-obsidian-border flex items-center justify-between text-[11px] font-mono">
                   <div>
-                    <span className="text-[10px] font-mono uppercase text-bone-muted dark:text-obsidian-muted block">
+                    <span className="text-[9px] uppercase text-bone-muted dark:text-obsidian-muted block">
                       Target Budget
                     </span>
-                    <span className="font-bold text-sm text-carbon dark:text-white">
+                    <span className="font-bold text-carbon dark:text-white">
                       {formatINR(enq.estimatedBudget)}
                     </span>
                   </div>
 
                   <button
+                    disabled={!currentUser.canEditQuotesAndOrders}
                     onClick={() => handleLaunchQuoteFromEnquiry(enq)}
-                    className="px-3 py-1.5 bg-carbon text-bone dark:bg-white dark:text-carbon text-xs font-mono uppercase tracking-wider hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all flex items-center gap-1"
+                    className="px-2.5 py-1 bg-carbon text-bone dark:bg-white dark:text-carbon text-[10px] font-mono uppercase tracking-wider hover:bg-vermillion transition-all flex items-center gap-1"
                   >
                     <span>Create Quote</span>
-                    <ArrowRight size={12} />
+                    <ArrowRight size={10} />
                   </button>
                 </div>
               </div>
@@ -641,66 +727,64 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 3: ORDERS & DELIVERY PIPELINE (CONVERTED BOOKINGS)                     */}
+      {/* TAB 3: ORDERS & DELIVERY PIPELINE                                         */}
       {/* ========================================================================= */}
       {activeTab === 'orders' && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono uppercase tracking-widest text-bone-muted dark:text-obsidian-muted">
-              Active Production Orders & Post-Delivery Stages ({bookings.length})
-            </span>
-          </div>
+        <div className="space-y-4">
+          <span className="text-xs font-mono uppercase tracking-widest text-bone-muted dark:text-obsidian-muted block">
+            Active Production Orders & Post-Delivery Stages ({bookings.length})
+          </span>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {bookings.map((booking) => {
               const currentStage: DeliveryStage = booking.deliveryStage || 'EDITING_IN_PROGRESS';
               return (
                 <div
                   key={booking.id}
-                  className="p-6 bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white shadow-sm space-y-6"
+                  className="p-5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border shadow-sm space-y-4"
                 >
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-bone-border dark:border-obsidian-border pb-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-bone-border dark:border-obsidian-border pb-3">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-xs font-bold text-vermillion">
                           ORDER: {booking.shootCode}
                         </span>
-                        <span className="text-[10px] font-mono px-2 py-0.5 bg-carbon/5 dark:bg-white/10 uppercase">
+                        <span className="text-[9px] font-mono px-1.5 py-0.2 bg-carbon/5 dark:bg-white/10 uppercase">
                           {booking.type}
                         </span>
                       </div>
-                      <h3 className="font-serif text-xl font-bold text-carbon dark:text-white mt-1">
+                      <h3 className="font-serif text-lg font-bold text-carbon dark:text-white mt-0.5">
                         {booking.title}
                       </h3>
-                      <p className="text-xs font-mono text-bone-muted dark:text-obsidian-muted">
-                        Client: {booking.client.name} — {booking.client.company} ({booking.location.city})
+                      <p className="text-[11px] font-mono text-bone-muted dark:text-obsidian-muted">
+                        Client: {booking.client.name} ({booking.location.city})
                       </p>
                     </div>
 
                     <div className="text-right font-mono">
-                      <span className="text-[10px] uppercase text-bone-muted dark:text-obsidian-muted block">
-                        Financial Settlement
+                      <span className="text-[9px] uppercase text-bone-muted dark:text-obsidian-muted block">
+                        Order Financials
                       </span>
                       <span className="text-xs text-green-600 dark:text-green-400 font-bold">
                         Paid: {formatINR(booking.financialSummary.retainerPaid)}
                       </span>
                       <span className="text-xs text-vermillion font-bold block">
-                        Balance Due: {formatINR(booking.financialSummary.balanceDue)}
+                        Due: {formatINR(booking.financialSummary.balanceDue)}
                       </span>
                     </div>
                   </div>
 
                   {/* Delivery Pipeline Stepper */}
                   <div>
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-bone-muted dark:text-obsidian-muted block mb-3">
-                      Post-Production & Delivery Milestones
+                    <span className="text-[9.5px] font-mono uppercase tracking-widest text-bone-muted dark:text-obsidian-muted block mb-2">
+                      Delivery Milestones
                     </span>
-                    <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-[10px] font-mono text-center">
+                    <div className="grid grid-cols-2 sm:grid-cols-6 gap-1.5 text-[9.5px] font-mono text-center">
                       {[
                         { id: 'RAW_INGESTED', label: '1. RAW Ingest' },
-                        { id: 'SELECTION_PENDING', label: '2. Client Selection' },
-                        { id: 'EDITING_IN_PROGRESS', label: '3. Color & Retouch' },
-                        { id: 'ALBUM_DESIGN', label: '4. Album Printing' },
+                        { id: 'SELECTION_PENDING', label: '2. Selection' },
+                        { id: 'EDITING_IN_PROGRESS', label: '3. Retouch' },
+                        { id: 'ALBUM_DESIGN', label: '4. Album Print' },
                         { id: 'DELIVERED', label: '5. Dispatched' },
                         { id: 'COMPLETED', label: '6. Archival Done' },
                       ].map((stage) => {
@@ -713,7 +797,7 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
                                 deliveryStage: stage.id as DeliveryStage,
                               })
                             }
-                            className={`p-2 border transition-all ${
+                            className={`p-1.5 border transition-all ${
                               isCurrent
                                 ? 'bg-carbon text-bone dark:bg-white dark:text-carbon font-bold border-carbon dark:border-white'
                                 : 'border-bone-border dark:border-obsidian-border text-bone-muted hover:text-carbon dark:hover:text-white'
@@ -727,7 +811,7 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
                   </div>
 
                   {/* Checklist (Hard Drive & Selection Done) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-xs font-mono">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-[11px] font-mono">
                     <label className="flex items-center gap-2 cursor-pointer select-none">
                       <input
                         type="checkbox"
@@ -737,10 +821,10 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
                             hardDriveReceived: e.target.checked,
                           })
                         }
-                        className="w-4 h-4 accent-vermillion"
+                        className="w-3.5 h-3.5 accent-vermillion"
                       />
-                      <span className="font-semibold text-carbon dark:text-white">
-                        Client Hard Drive Received for RAW Data (Term #12)
+                      <span className="text-carbon dark:text-white">
+                        Hard Drive Received for RAW data (Term #12)
                       </span>
                     </label>
 
@@ -753,9 +837,9 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
                             clientSelectionDone: e.target.checked,
                           })
                         }
-                        className="w-4 h-4 accent-vermillion"
+                        className="w-3.5 h-3.5 accent-vermillion"
                       />
-                      <span className="font-semibold text-carbon dark:text-white">
+                      <span className="text-carbon dark:text-white">
                         Photo Selection Completed by Client (Term #11)
                       </span>
                     </label>
@@ -768,54 +852,56 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 4: PRE-DEFINED CATALOG & ITEMS EDITOR                                  */}
+      {/* TAB 4: PRE-DEFINED CATALOG & PRESETS                                      */}
       {/* ========================================================================= */}
       {activeTab === 'catalog' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-          {/* Section 1: Pre-defined Requirements List */}
-          <div className="p-6 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-bone-border dark:border-obsidian-border">
-              <h3 className="font-serif text-lg font-bold uppercase text-carbon dark:text-white">
-                Pre-defined Requirements Catalog
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          {/* Section 1: Pre-defined Requirements */}
+          <div className="p-5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-bone-border dark:border-obsidian-border">
+              <h3 className="font-serif text-base font-bold uppercase text-carbon dark:text-white">
+                Requirements Catalog
               </h3>
-              <span className="text-[10px] font-mono text-bone-muted">Admin Controlled</span>
+              <span className="text-[9px] font-mono text-bone-muted">Admin Controlled</span>
             </div>
 
-            <div className="space-y-2">
-              {catalog.standardRequirements.map((req, idx) => (
+            <div className="space-y-1.5">
+              {catalog.standardRequirements.map((req) => (
                 <div
                   key={req.id}
-                  className="p-2.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border flex items-center justify-between text-xs font-mono"
+                  className="p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border flex items-center justify-between text-[11px] font-mono"
                 >
                   <div>
                     <span className="font-bold text-carbon dark:text-white">{req.name}</span>
-                    <span className="text-bone-muted dark:text-obsidian-muted ml-2">({req.price})</span>
+                    <span className="text-bone-muted ml-2">({req.price})</span>
                   </div>
                   <button
+                    disabled={!currentUser.canAccessSettings}
                     onClick={() => {
                       setCatalog({
                         ...catalog,
                         standardRequirements: catalog.standardRequirements.filter((r) => r.id !== req.id),
                       });
                     }}
-                    className="text-bone-muted hover:text-vermillion p-1"
+                    className="text-bone-muted hover:text-vermillion p-0.5"
                   >
-                    <Trash2 size={13} />
+                    <Trash2 size={12} />
                   </button>
                 </div>
               ))}
             </div>
 
             {/* Add requirement */}
-            <div className="flex gap-2 pt-2 text-xs font-mono">
+            <div className="flex gap-2 pt-1 text-[11px] font-mono">
               <input
                 type="text"
-                placeholder="e.g. Drone Night FPV Chase"
+                placeholder="e.g. Pre-Wedding Beach Teaser"
                 value={newReqName}
                 onChange={(e) => setNewReqName(e.target.value)}
-                className="flex-1 p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
+                className="flex-1 p-1.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
               />
               <button
+                disabled={!currentUser.canAccessSettings}
                 onClick={() => {
                   if (!newReqName.trim()) return;
                   setCatalog({
@@ -827,67 +913,67 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
                   });
                   setNewReqName('');
                 }}
-                className="px-4 py-2 bg-carbon text-bone dark:bg-white dark:text-carbon font-bold uppercase"
+                className="px-3 py-1.5 bg-carbon text-bone dark:bg-white dark:text-carbon font-bold uppercase"
               >
                 Add
               </button>
             </div>
           </div>
 
-          {/* Section 2: Pre-defined Deliverables with Details */}
-          <div className="p-6 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-bone-border dark:border-obsidian-border">
-              <h3 className="font-serif text-lg font-bold uppercase text-carbon dark:text-white">
-                Pre-defined Deliverables & Footnotes
+          {/* Section 2: Pre-defined Deliverables */}
+          <div className="p-5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-bone-border dark:border-obsidian-border">
+              <h3 className="font-serif text-base font-bold uppercase text-carbon dark:text-white">
+                Deliverables & Footnotes
               </h3>
-              <span className="text-[10px] font-mono text-bone-muted">Admin Controlled</span>
+              <span className="text-[9px] font-mono text-bone-muted">Admin Controlled</span>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {catalog.standardDeliverables.map((del) => (
                 <div
                   key={del.id}
-                  className="p-2.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border flex items-start justify-between text-xs font-mono"
+                  className="p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border flex items-start justify-between text-[11px] font-mono"
                 >
                   <div>
                     <span className="font-bold text-carbon dark:text-white block">{del.item}</span>
-                    <span className="text-[11px] text-bone-muted dark:text-obsidian-muted italic">
-                      {del.details}
-                    </span>
+                    <span className="text-[10px] text-bone-muted italic">{del.details}</span>
                   </div>
                   <button
+                    disabled={!currentUser.canAccessSettings}
                     onClick={() => {
                       setCatalog({
                         ...catalog,
                         standardDeliverables: catalog.standardDeliverables.filter((d) => d.id !== del.id),
                       });
                     }}
-                    className="text-bone-muted hover:text-vermillion p-1 shrink-0"
+                    className="text-bone-muted hover:text-vermillion p-0.5 shrink-0"
                   >
-                    <Trash2 size={13} />
+                    <Trash2 size={12} />
                   </button>
                 </div>
               ))}
             </div>
 
             {/* Add deliverable */}
-            <div className="space-y-2 pt-2 text-xs font-mono">
+            <div className="space-y-1.5 pt-1 text-[11px] font-mono">
               <input
                 type="text"
-                placeholder="Item title (e.g. Wedding Highlight Teaser)"
+                placeholder="Item title (e.g. Reel for Instagram 4K)"
                 value={newDelivItem}
                 onChange={(e) => setNewDelivItem(e.target.value)}
-                className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
+                className="w-full p-1.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
               />
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Details (e.g. *60-sec vertical reel)"
+                  placeholder="Details (e.g. *delivered within 48 hours)"
                   value={newDelivDetail}
                   onChange={(e) => setNewDelivDetail(e.target.value)}
-                  className="flex-1 p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
+                  className="flex-1 p-1.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
                 />
                 <button
+                  disabled={!currentUser.canAccessSettings}
                   onClick={() => {
                     if (!newDelivItem.trim()) return;
                     setCatalog({
@@ -905,7 +991,7 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
                     setNewDelivItem('');
                     setNewDelivDetail('');
                   }}
-                  className="px-4 py-2 bg-carbon text-bone dark:bg-white dark:text-carbon font-bold uppercase"
+                  className="px-3 py-1.5 bg-carbon text-bone dark:bg-white dark:text-carbon font-bold uppercase"
                 >
                   Add
                 </button>
@@ -916,18 +1002,18 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 1: NEW CLIENT ENQUIRY MODAL                                          */}
+      {/* MODAL 1: NEW ENQUIRY MODAL                                                */}
       {/* ========================================================================= */}
       {showEnquiryModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-carbon/70 backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-lg bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white p-6 shadow-2xl space-y-4"
+            className="w-full max-w-md bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white p-5 shadow-2xl space-y-3"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-bone-border dark:border-obsidian-border">
-              <h3 className="font-serif text-xl font-bold uppercase text-carbon dark:text-white">
-                Log New Coastal Enquiry
+            <div className="flex items-center justify-between pb-2 border-b border-bone-border dark:border-obsidian-border">
+              <h3 className="font-serif text-lg font-bold uppercase text-carbon dark:text-white">
+                Log New Client Lead
               </h3>
               <button
                 onClick={() => setShowEnquiryModal(false)}
@@ -937,24 +1023,24 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleCreateEnquiry} className="space-y-3 text-xs font-mono">
+            <form onSubmit={handleCreateEnquiry} className="space-y-2.5 text-[11px] font-mono">
               <div>
-                <label className="block text-[10px] uppercase text-bone-muted mb-1">
+                <label className="block text-[9.5px] uppercase text-bone-muted mb-0.5">
                   Client / Couple Name
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Alveera D’souza / Arvind Hegde"
+                  placeholder="Alveera D’souza"
                   value={enqClientName}
                   onChange={(e) => setEnqClientName(e.target.value)}
                   className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] uppercase text-bone-muted mb-1">
+                  <label className="block text-[9.5px] uppercase text-bone-muted mb-0.5">
                     Phone / WhatsApp
                   </label>
                   <input
@@ -967,13 +1053,13 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                    City / Location
+                  <label className="block text-[9.5px] uppercase text-bone-muted mb-0.5">
+                    City / Venue
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="Mangalore / Udupi"
+                    placeholder="Mangalore"
                     value={enqCity}
                     onChange={(e) => setEnqCity(e.target.value)}
                     className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
@@ -981,10 +1067,10 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                    Target Event Date
+                  <label className="block text-[9.5px] uppercase text-bone-muted mb-0.5">
+                    Event Date
                   </label>
                   <input
                     type="date"
@@ -995,12 +1081,13 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                    Budget Estimate (INR)
+                  <label className="block text-[9.5px] uppercase text-bone-muted mb-0.5">
+                    Budget (Max Rs 44,000)
                   </label>
                   <input
                     type="number"
                     required
+                    max="44000"
                     value={enqBudget}
                     onChange={(e) => setEnqBudget(e.target.value)}
                     className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
@@ -1009,43 +1096,30 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                  Event Category
+                <label className="block text-[9.5px] uppercase text-bone-muted mb-0.5">
+                  Event Description
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Catholic Nuptials, Roce & Ullal Reception"
+                  placeholder="Catholic Wedding Ceremony & Reception"
                   value={enqType}
                   onChange={(e) => setEnqType(e.target.value)}
                   className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
                 />
               </div>
 
-              <div>
-                <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                  Creative Requirements & Location Notes
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Beachside sunset portraits, drone clearance details, church protocols..."
-                  value={enqNotes}
-                  onChange={(e) => setEnqNotes(e.target.value)}
-                  className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none resize-none"
-                />
-              </div>
-
               <div className="pt-2 flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 bg-carbon text-bone dark:bg-white dark:text-carbon font-bold uppercase tracking-widest hover:bg-vermillion transition-all"
+                  className="flex-1 py-2 bg-carbon text-bone dark:bg-white dark:text-carbon font-bold uppercase tracking-widest hover:bg-vermillion transition-all"
                 >
-                  Save Enquiry
+                  Save Lead
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowEnquiryModal(false)}
-                  className="px-4 py-2.5 border border-bone-border dark:border-obsidian-border uppercase"
+                  className="px-3 py-2 border border-bone-border dark:border-obsidian-border uppercase"
                 >
                   Cancel
                 </button>
@@ -1056,37 +1130,42 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 2: GENERATE / CUSTOMIZE QUOTATION MODAL                              */}
+      {/* MODAL 2: CREATE / EDIT QUOTATION MODAL (CASCADES TO ORDERS!)               */}
       {/* ========================================================================= */}
-      {showCreateQuoteModal && (
+      {showQuoteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-carbon/70 backdrop-blur-sm overflow-y-auto">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-3xl bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white p-6 sm:p-8 shadow-2xl space-y-6 my-8 max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-2xl bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white p-5 sm:p-6 shadow-2xl space-y-4 my-6 max-h-[90vh] overflow-y-auto"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-bone-border dark:border-obsidian-border">
+            <div className="flex items-center justify-between pb-2 border-b border-bone-border dark:border-obsidian-border">
               <div>
-                <span className="text-[10px] font-mono text-vermillion uppercase font-bold block">
-                  Studio Dispatch
+                <span className="text-[9.5px] font-mono text-vermillion uppercase font-bold block">
+                  {isEditingQuote ? 'Live Modification Engine' : 'Studio Dispatch'}
                 </span>
-                <h3 className="font-serif text-2xl font-bold uppercase text-carbon dark:text-white">
-                  Package Quotation Builder
+                <h3 className="font-serif text-xl font-bold uppercase text-carbon dark:text-white">
+                  {isEditingQuote ? 'Edit Quotation (Syncs with Order & Invoice)' : 'Package Quotation Builder'}
                 </h3>
               </div>
               <button
-                onClick={() => setShowCreateQuoteModal(false)}
+                onClick={() => setShowQuoteModal(false)}
                 className="text-xs font-mono text-bone-muted hover:text-carbon dark:hover:text-white"
               >
                 [ESC]
               </button>
             </div>
 
-            <form onSubmit={handleSaveQuotation} className="space-y-6 text-xs font-mono">
-              {/* Header Metadata */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {isEditingQuote && (
+              <div className="p-2 bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-400 text-[10px] font-mono">
+                <strong>Auto-Cascading Sync:</strong> Saving changes here will automatically update the matching confirmed Booking, the Schedule, and the Tax Invoice!
+              </div>
+            )}
+
+            <form onSubmit={handleSaveQuotation} className="space-y-4 text-[11px] font-mono">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-[10px] uppercase text-bone-muted mb-1">
+                  <label className="block text-[9px] uppercase text-bone-muted mb-0.5">
                     Quotation No.
                   </label>
                   <input
@@ -1094,83 +1173,71 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
                     required
                     value={qNumber}
                     onChange={(e) => setQNumber(e.target.value)}
-                    className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white font-bold"
+                    className="w-full p-1.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white font-bold"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                    Date
-                  </label>
+                  <label className="block text-[9px] uppercase text-bone-muted mb-0.5">Date</label>
                   <input
                     type="text"
                     required
                     value={qDate}
                     onChange={(e) => setQDate(e.target.value)}
-                    className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white"
+                    className="w-full p-1.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                    Package Title
-                  </label>
+                  <label className="block text-[9px] uppercase text-bone-muted mb-0.5">Package Title</label>
                   <input
                     type="text"
                     required
                     value={qPackageTitle}
                     onChange={(e) => setQPackageTitle(e.target.value)}
-                    className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white font-bold"
+                    className="w-full p-1.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white font-bold"
                   />
                 </div>
               </div>
 
-              {/* Client Info */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border">
                 <div>
-                  <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                    Quoted to (Client Name)
-                  </label>
+                  <label className="block text-[9px] uppercase text-bone-muted mb-0.5">Quoted To (Client)</label>
                   <input
                     type="text"
                     required
                     placeholder="Alveera D’souza"
                     value={qClientName}
                     onChange={(e) => setQClientName(e.target.value)}
-                    className="w-full p-2 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border text-carbon dark:text-white font-bold"
+                    className="w-full p-1.5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border text-carbon dark:text-white font-bold"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                    City / Jurisdiction
-                  </label>
+                  <label className="block text-[9px] uppercase text-bone-muted mb-0.5">City</label>
                   <input
                     type="text"
                     required
                     value={qClientCity}
                     onChange={(e) => setQClientCity(e.target.value)}
-                    className="w-full p-2 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border text-carbon dark:text-white"
+                    className="w-full p-1.5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border text-carbon dark:text-white"
                   />
                 </div>
               </div>
 
-              {/* Requirements Checklist (Add / Remove from Pre-defined) */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold uppercase text-[11px]">
-                    Select Requirements Included in Package:
-                  </span>
-                  <span className="text-[10px] text-bone-muted">From Pre-defined Catalog</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto p-2 border border-bone-border dark:border-obsidian-border">
+              {/* Requirements Checklist */}
+              <div className="space-y-1.5">
+                <span className="font-bold uppercase text-[10px] block">
+                  Requirements Included in Package:
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-36 overflow-y-auto p-2 border border-bone-border dark:border-obsidian-border">
                   {qRequirements.map((req) => (
                     <label
                       key={req.id}
-                      className={`p-2 border flex items-center justify-between cursor-pointer transition-all ${
+                      className={`p-1.5 border flex items-center justify-between cursor-pointer transition-all ${
                         req.included
                           ? 'bg-carbon/5 dark:bg-white/10 border-carbon dark:border-white font-bold'
                           : 'border-bone-border dark:border-obsidian-border text-bone-muted'
                       }`}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <input
                           type="checkbox"
                           checked={req.included}
@@ -1185,28 +1252,28 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
                         />
                         <span>{req.name}</span>
                       </div>
-                      <span className="text-[10px] opacity-70">{req.price}</span>
+                      <span className="text-[9px] opacity-70">{req.price}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
-              {/* Deliverables Checklist (Add / Remove from Pre-defined) */}
-              <div className="space-y-2">
-                <span className="font-bold uppercase text-[11px] block">
-                  Select Deliverables & Footnotes:
+              {/* Deliverables Checklist */}
+              <div className="space-y-1.5">
+                <span className="font-bold uppercase text-[10px] block">
+                  Deliverables & Footnotes:
                 </span>
-                <div className="space-y-1.5 max-h-44 overflow-y-auto p-2 border border-bone-border dark:border-obsidian-border">
+                <div className="space-y-1 max-h-36 overflow-y-auto p-2 border border-bone-border dark:border-obsidian-border">
                   {qDeliverables.map((del) => (
                     <label
                       key={del.id}
-                      className={`p-2 border flex items-center justify-between cursor-pointer transition-all ${
+                      className={`p-1.5 border flex items-center justify-between cursor-pointer transition-all ${
                         del.included
                           ? 'bg-carbon/5 dark:bg-white/10 border-carbon dark:border-white font-bold'
                           : 'border-bone-border dark:border-obsidian-border text-bone-muted'
                       }`}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <input
                           type="checkbox"
                           checked={del.included}
@@ -1221,22 +1288,22 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
                         />
                         <span>{del.item}</span>
                       </div>
-                      <span className="text-[10px] text-bone-muted italic">{del.details}</span>
+                      <span className="text-[9px] text-bone-muted italic">{del.details}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
               {/* Crew Numbers */}
-              <div className="space-y-2">
-                <span className="font-bold uppercase text-[11px] block">Crew Members Allocation:</span>
+              <div className="space-y-1.5">
+                <span className="font-bold uppercase text-[10px] block">Crew Numbers:</span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {qCrew.map((crew) => (
                     <div
                       key={crew.id}
-                      className="p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border"
+                      className="p-1.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border"
                     >
-                      <span className="text-[10px] text-bone-muted uppercase block">{crew.role}</span>
+                      <span className="text-[9px] text-bone-muted uppercase block">{crew.role}</span>
                       <input
                         type="number"
                         min="1"
@@ -1245,46 +1312,47 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
                           const val = parseInt(e.target.value) || 1;
                           setQCrew(qCrew.map((c) => (c.id === crew.id ? { ...c, number: val } : c)));
                         }}
-                        className="w-full bg-transparent font-bold text-sm text-carbon dark:text-white outline-none"
+                        className="w-full bg-transparent font-bold text-xs text-carbon dark:text-white outline-none"
                       />
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Total Price */}
-              <div className="p-4 bg-bone-surface dark:bg-obsidian-surface border-2 border-carbon dark:border-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              {/* Total Price Capped Strictly Under 45,000 */}
+              <div className="p-3 bg-bone-surface dark:bg-obsidian-surface border border-carbon dark:border-white flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-vermillion block">
-                    Grand Package Price (INR)
+                  <span className="text-[9.5px] uppercase font-bold text-vermillion block">
+                    Total Package Price (Max Rs 44,000)
                   </span>
-                  <p className="text-[11px] text-bone-muted">
+                  <p className="text-[9px] text-bone-muted">
                     Advance: {qAdvancePct}% ({formatINR((parseFloat(qTotalPrice) * qAdvancePct) / 100)})
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-serif font-bold text-lg">Rs.</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-serif font-bold text-sm">Rs.</span>
                   <input
                     type="number"
                     required
+                    max="44000"
                     value={qTotalPrice}
                     onChange={(e) => setQTotalPrice(e.target.value)}
-                    className="w-36 p-2 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border text-carbon dark:text-white font-serif font-black text-lg outline-none"
+                    className="w-28 p-1.5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border text-carbon dark:text-white font-serif font-black text-base outline-none"
                   />
                 </div>
               </div>
 
-              <div className="pt-2 flex gap-3">
+              <div className="pt-2 flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-carbon text-bone dark:bg-white dark:text-carbon font-bold uppercase tracking-widest hover:bg-vermillion transition-all"
+                  className="flex-1 py-2.5 bg-carbon text-bone dark:bg-white dark:text-carbon font-bold uppercase tracking-widest hover:bg-vermillion transition-all"
                 >
-                  Generate & Commit Quotation
+                  {isEditingQuote ? 'Update Quote Everywhere' : 'Save & Commit Quotation'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowCreateQuoteModal(false)}
-                  className="px-6 py-3 border border-bone-border dark:border-obsidian-border uppercase tracking-widest"
+                  onClick={() => setShowQuoteModal(false)}
+                  className="px-4 py-2.5 border border-bone-border dark:border-obsidian-border uppercase"
                 >
                   Cancel
                 </button>
@@ -1295,24 +1363,19 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 3: RECORD MANUAL PAYMENT & AUTO-SYNC ENGINE                         */}
+      {/* MODAL 3: MANUAL PAYMENT ENTRY                                             */}
       {/* ========================================================================= */}
       {showPaymentModal && paymentTargetQuote && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-carbon/70 backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-md bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white p-6 shadow-2xl space-y-4"
+            className="w-full max-w-sm bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white p-5 shadow-2xl space-y-3"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-bone-border dark:border-obsidian-border">
-              <div>
-                <span className="text-[10px] font-mono text-vermillion uppercase font-bold block">
-                  Treasury Ledger Sync
-                </span>
-                <h3 className="font-serif text-xl font-bold uppercase text-carbon dark:text-white">
-                  Record Manual Payment
-                </h3>
-              </div>
+            <div className="flex items-center justify-between pb-2 border-b border-bone-border dark:border-obsidian-border">
+              <h3 className="font-serif text-lg font-bold uppercase text-carbon dark:text-white">
+                Record Payment
+              </h3>
               <button
                 onClick={() => setShowPaymentModal(false)}
                 className="text-xs font-mono text-bone-muted hover:text-carbon dark:hover:text-white"
@@ -1321,81 +1384,52 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
               </button>
             </div>
 
-            <div className="p-3 bg-green-500/10 border border-green-500/30 text-green-700 dark:text-green-400 text-xs font-mono">
-              <span className="font-bold block">Auto-Sync Activated:</span>
-              <span>
-                Recording this payment will immediately update the Order balance, invoice status, and
-                log an incoming receipt in the Dual General Ledger.
-              </span>
-            </div>
-
-            <form onSubmit={handleRecordPaymentSubmit} className="space-y-3 text-xs font-mono">
+            <form onSubmit={handleRecordPaymentSubmit} className="space-y-2.5 text-[11px] font-mono">
               <div>
-                <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                  Client & Quotation Reference
-                </label>
+                <label className="block text-[9px] uppercase text-bone-muted mb-0.5">Client Reference</label>
                 <input
                   type="text"
                   readOnly
                   value={`${paymentTargetQuote.clientName} (${paymentTargetQuote.quotationNumber})`}
-                  className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white font-bold"
+                  className="w-full p-1.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white font-bold"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                  Payment Amount Received (INR)
-                </label>
+                <label className="block text-[9px] uppercase text-bone-muted mb-0.5">Amount (INR)</label>
                 <input
                   type="number"
                   required
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
-                  className="w-full p-2.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white font-serif font-black text-lg outline-none"
+                  className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white font-serif font-black text-base outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                  Payment Method
-                </label>
+                <label className="block text-[9px] uppercase text-bone-muted mb-0.5">Payment Method</label>
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
+                  className="w-full p-1.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
                 >
-                  <option value="UPI / GPay">UPI / GPay / PhonePe</option>
+                  <option value="UPI / GPay">UPI / GPay</option>
                   <option value="NEFT / RTGS HDFC">NEFT / RTGS HDFC Bank</option>
-                  <option value="IMPS Transfer">IMPS Direct</option>
-                  <option value="Cheque Deposit">Bank Cheque Deposit</option>
-                  <option value="Cash Receipt">Cash Deposit / Float</option>
+                  <option value="Cash Receipt">Cash Receipt</option>
                 </select>
-              </div>
-
-              <div>
-                <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                  Notes / Transaction ID
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. UTR # 894029104928"
-                  value={paymentNotes}
-                  onChange={(e) => setPaymentNotes(e.target.value)}
-                  className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white outline-none"
-                />
               </div>
 
               <div className="pt-2 flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-carbon text-bone dark:bg-white dark:text-carbon font-bold uppercase tracking-widest hover:bg-vermillion transition-all"
+                  className="flex-1 py-2.5 bg-carbon text-bone dark:bg-white dark:text-carbon font-bold uppercase tracking-widest hover:bg-vermillion transition-all"
                 >
-                  Commit & Sync Everywhere
+                  Commit & Sync
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowPaymentModal(false)}
-                  className="px-4 py-3 border border-bone-border dark:border-obsidian-border uppercase"
+                  className="px-3 py-2.5 border border-bone-border dark:border-obsidian-border uppercase"
                 >
                   Cancel
                 </button>

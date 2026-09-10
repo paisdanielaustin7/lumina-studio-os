@@ -17,8 +17,10 @@ import {
   Moon,
   Sparkles,
   Camera,
+  KeyRound,
+  Lock,
 } from 'lucide-react';
-import { ViewModule, UserRole } from '@/types';
+import { ViewModule, UserRole, UserAccount } from '@/types';
 import { useTheme } from './ThemeContext';
 
 interface SidebarProps {
@@ -28,6 +30,8 @@ interface SidebarProps {
   setIsCollapsed: (collapsed: boolean) => void;
   userRole: UserRole;
   setUserRole: (role: UserRole) => void;
+  currentUser: UserAccount;
+  onOpenLoginModal: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -37,17 +41,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setIsCollapsed,
   userRole,
   setUserRole,
+  currentUser,
+  onOpenLoginModal,
 }) => {
   const { theme, toggleTheme } = useTheme();
 
   const navItems = [
     { id: 'overview' as ViewModule, label: 'Overview', icon: LayoutDashboard, badge: 'LIVE' },
-    { id: 'quotations' as ViewModule, label: 'Quotations & Orders', icon: Sparkles, badge: 'Q-ENGINE' },
+    { id: 'quotations' as ViewModule, label: 'Quotations & Orders', icon: Sparkles, badge: currentUser.canEditQuotesAndOrders ? 'EDIT' : 'READ' },
     { id: 'calendar' as ViewModule, label: 'Calendar / Call Sheets', icon: CalendarDays, badge: '4 SETS' },
-    { id: 'ledger' as ViewModule, label: 'Dual Ledger', icon: Scale, badge: null },
+    { id: 'ledger' as ViewModule, label: 'Dual Ledger', icon: Scale, badge: currentUser.canViewFinances ? null : 'LOCKED' },
     { id: 'billing' as ViewModule, label: 'Invoices & Retainers', icon: FileText, badge: null },
-    { id: 'access' as ViewModule, label: 'Access Control', icon: ShieldCheck, badge: userRole === 'ADMIN_DIRECTOR' ? 'DIR' : '2ND' },
-    { id: 'settings' as ViewModule, label: 'Studio Settings', icon: Settings, badge: null },
+    { id: 'access' as ViewModule, label: 'Access Control', icon: ShieldCheck, badge: currentUser.role === 'ADMIN_DIRECTOR' ? 'DIR' : 'CREW' },
+    { id: 'settings' as ViewModule, label: 'Studio Settings', icon: Settings, badge: currentUser.canAccessSettings ? null : 'LOCKED' },
   ];
 
   return (
@@ -244,21 +250,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* User Identity Profile Card */}
         <div
           className={`flex items-center ${
-            isCollapsed ? 'justify-center' : 'gap-3'
-          } p-2 bg-bone-surface dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border`}
+            isCollapsed ? 'justify-center' : 'gap-2.5'
+          } p-2 bg-bone-surface dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border group`}
         >
           <div className="w-8 h-8 shrink-0 bg-carbon text-bone dark:bg-white dark:text-obsidian font-serif font-black flex items-center justify-center text-xs">
-            DA
+            {currentUser.username.substring(0, 2).toUpperCase()}
           </div>
           {!isCollapsed && (
-            <div className="overflow-hidden flex-1">
-              <p className="text-xs font-semibold truncate text-carbon dark:text-white">
-                Dan Aurel
-              </p>
+            <div className="overflow-hidden flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold truncate text-carbon dark:text-white">
+                  {currentUser.fullName}
+                </p>
+              </div>
               <p className="text-[10px] font-mono uppercase tracking-wider text-bone-muted dark:text-obsidian-muted truncate">
-                {userRole === 'ADMIN_DIRECTOR' ? 'Studio Principal' : 'Second Unit Lead'}
+                @{currentUser.username} // {currentUser.role === 'ADMIN_DIRECTOR' ? 'ROOT DIR' : 'CREW'}
               </p>
             </div>
+          )}
+          {!isCollapsed && (
+            <button
+              onClick={onOpenLoginModal}
+              className="p-1 text-bone-muted dark:text-obsidian-muted hover:text-vermillion dark:hover:text-vermillion transition-colors"
+              title="Switch Account / Authenticate"
+            >
+              <KeyRound size={13} />
+            </button>
           )}
         </div>
       </div>

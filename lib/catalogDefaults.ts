@@ -1,4 +1,10 @@
-import { QuotationItem, DeliverableItem, CrewRequirement } from '@/types';
+import {
+  QuotationItem,
+  DeliverableItem,
+  CrewRequirement,
+  StudioSettings,
+  UserAccount,
+} from '@/types';
 
 export interface CatalogTemplate {
   standardRequirements: QuotationItem[];
@@ -15,9 +21,9 @@ export const defaultCatalog: CatalogTemplate = {
     { id: 'req-02', name: 'Candid Photography', price: '-', included: true },
     { id: 'req-03', name: 'Cinematic Highlights', price: '-', included: true },
     { id: 'req-04', name: 'Traditional Videography', price: '-', included: true },
-    { id: 'req-05', name: 'Drone Aerial Cinema Coverage', price: 'Rs 15,000 /-', included: false },
-    { id: 'req-06', name: 'Pre-Wedding Coastal Beach Session', price: 'Rs 25,000 /-', included: false },
-    { id: 'req-07', name: 'Roce / Haldi Evening Ritual Coverage', price: 'Rs 20,000 /-', included: false },
+    { id: 'req-05', name: 'Drone Aerial Cinema Coverage', price: 'Rs 8,000 /-', included: false },
+    { id: 'req-06', name: 'Pre-Wedding Coastal Beach Session', price: 'Rs 12,000 /-', included: false },
+    { id: 'req-07', name: 'Roce / Haldi Evening Ritual Coverage', price: 'Rs 10,000 /-', included: false },
   ],
 
   standardDeliverables: [
@@ -87,6 +93,58 @@ export const defaultCatalog: CatalogTemplate = {
     'Couple needs to provide a Hard Drive for the collection of RAW data, agency will not be liable for anykind of DATA LOSS after 6 months from the shoot date.',
   ],
 
-  defaultContactPerson: 'REUBEN SERRAO',
+  defaultContactPerson: 'DAN AUREL',
   defaultContactPhone: '+91 9380057445',
 };
+
+export const defaultStudioSettings: StudioSettings = {
+  studioName: 'LUMINA',
+  tagline: 'Wedding Cinemastory & Stills // Mangalore',
+  city: 'Mangalore, Karnataka',
+  gstin: '29AABCL1984M1Z8',
+  bankingDetails: {
+    accountName: 'LUMINA ATELIER STUDIOS LLP',
+    bankName: 'HDFC Bank Ltd',
+    branch: 'Hampankatta Branch, Mangalore',
+    accountNumber: '50200084920194',
+    ifscCode: 'HDFC0000084',
+    upiId: 'lumina.studios@hdfcbank',
+  },
+  contactPerson: 'DAN AUREL',
+  contactPhone: '+91 9380057445',
+  termsAndConditions: defaultCatalog.standardTerms,
+  pdfThemeColor: 'sage',
+};
+
+export const defaultUsers: UserAccount[] = [
+  {
+    id: 'usr-admin',
+    username: 'admin',
+    password: 'adminoflumina123',
+    fullName: 'Studio Director Dan Aurel',
+    role: 'ADMIN_DIRECTOR',
+    canViewFinances: true,
+    canAccessSettings: true,
+    canEditQuotesAndOrders: true,
+  },
+  {
+    id: 'usr-roshan',
+    username: 'roshan',
+    password: 'crewpass123',
+    fullName: 'Roshan D’Silva (Lead 2nd Unit)',
+    role: 'SECOND_SHOOTER',
+    canViewFinances: false, // hidden finances
+    canAccessSettings: false, // restricted settings
+    canEditQuotesAndOrders: false, // restricted from editing finalized quotes
+  },
+  {
+    id: 'usr-farooq',
+    username: 'farooq',
+    password: 'ditpass123',
+    fullName: 'Farooq Mansoor (DIT & Colorist)',
+    role: 'SECOND_SHOOTER',
+    canViewFinances: false,
+    canAccessSettings: false,
+    canEditQuotesAndOrders: false,
+  },
+];

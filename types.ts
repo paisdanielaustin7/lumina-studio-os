@@ -235,3 +235,37 @@ export type ViewModule =
   | 'access';
 
 export type UserRole = 'ADMIN_DIRECTOR' | 'SECOND_SHOOTER' | 'PRODUCER';
+
+export type PDFThemeColor = 'sage' | 'monochrome' | 'sand_gold' | 'terracotta';
+
+export interface BankingDetails {
+  accountName: string;
+  bankName: string;
+  branch: string;
+  accountNumber: string;
+  ifscCode: string;
+  upiId?: string;
+}
+
+export interface StudioSettings {
+  studioName: string;
+  tagline: string;
+  city: string;
+  gstin: string;
+  bankingDetails: BankingDetails;
+  contactPerson: string;
+  contactPhone: string;
+  termsAndConditions: string[];
+  pdfThemeColor: PDFThemeColor;
+}
+
+export interface UserAccount {
+  id: string;
+  username: string;
+  password: string; // Stored client-side for bespoke studio OS role credentials
+  fullName: string;
+  role: UserRole;
+  canViewFinances: boolean; // Selective access: hides ledger & revenues if false
+  canAccessSettings: boolean; // Selective access: hides studio parameters if false
+  canEditQuotesAndOrders: boolean; // Selective access: read-only quote/order access if false
+}

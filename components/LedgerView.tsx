@@ -11,14 +11,18 @@ import {
   Receipt,
   Download,
   Search,
+  Lock,
+  KeyRound,
 } from 'lucide-react';
-import { LedgerEntry, LedgerCategory } from '@/types';
+import { LedgerEntry, LedgerCategory, UserAccount } from '@/types';
 
 interface LedgerViewProps {
   initialLedger: LedgerEntry[];
+  currentUser?: UserAccount;
+  onOpenLoginModal?: () => void;
 }
 
-export const LedgerView: React.FC<LedgerViewProps> = ({ initialLedger }) => {
+export const LedgerView: React.FC<LedgerViewProps> = ({ initialLedger, currentUser, onOpenLoginModal }) => {
   const [entries, setEntries] = useState<LedgerEntry[]>(initialLedger);
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
@@ -87,6 +91,35 @@ export const LedgerView: React.FC<LedgerViewProps> = ({ initialLedger }) => {
     setNewCounterparty('');
     setShowAddModal(false);
   };
+
+  if (currentUser && !currentUser.canViewFinances) {
+    return (
+      <div className="p-6 lg:p-12 max-w-4xl mx-auto space-y-6">
+        <div className="p-8 bg-bone-card dark:bg-obsidian-card border-2 border-vermillion space-y-4">
+          <div className="flex items-center gap-3 text-vermillion">
+            <Lock size={28} />
+            <h2 className="text-2xl font-serif font-black uppercase tracking-tight">
+              Access Restricted // Dual General Ledger
+            </h2>
+          </div>
+          <p className="text-xs font-mono text-bone-muted dark:text-obsidian-muted leading-relaxed">
+            Financial ledger entries, cashflow vaults, and retainer balances are hidden for account <code className="text-carbon dark:text-white font-bold">@{currentUser.username}</code> ({currentUser.fullName}) as per selective studio access policies.
+          </p>
+          {onOpenLoginModal && (
+            <div className="pt-4">
+              <button
+                onClick={onOpenLoginModal}
+                className="px-5 py-2.5 bg-vermillion text-white text-xs font-mono uppercase tracking-widest font-bold hover:bg-black transition-all flex items-center gap-2"
+              >
+                <KeyRound size={14} />
+                <span>Authenticate as Director</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-8">

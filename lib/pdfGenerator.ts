@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
-import { ShootBooking, Invoice, Quotation } from '@/types';
+import { ShootBooking, Invoice, Quotation, PDFThemeColor, StudioSettings } from '@/types';
+import { defaultStudioSettings } from '@/lib/catalogDefaults';
 
 // Format currency cleanly for PDF rendering
 const formatINR = (val: number): string => {
@@ -8,10 +9,53 @@ const formatINR = (val: number): string => {
   }).format(val) + ' /-';
 };
 
+// Color palettes for PDF theme customizer
+interface PDFColorPalette {
+  bg: [number, number, number];
+  strip: [number, number, number];
+  text: [number, number, number];
+  muted: [number, number, number];
+  accent: [number, number, number];
+}
+
+const PDF_PALETTES: Record<PDFThemeColor, PDFColorPalette> = {
+  sage: {
+    bg: [243, 247, 244],
+    strip: [228, 237, 231],
+    text: [15, 23, 20],
+    muted: [90, 105, 98],
+    accent: [235, 56, 41],
+  },
+  monochrome: {
+    bg: [248, 248, 248],
+    strip: [232, 232, 232],
+    text: [13, 13, 13],
+    muted: [100, 100, 100],
+    accent: [13, 13, 13],
+  },
+  sand_gold: {
+    bg: [252, 250, 245],
+    strip: [243, 236, 222],
+    text: [28, 24, 18],
+    muted: [120, 105, 85],
+    accent: [175, 125, 40],
+  },
+  terracotta: {
+    bg: [253, 247, 246],
+    strip: [248, 231, 229],
+    text: [30, 18, 16],
+    muted: [125, 85, 80],
+    accent: [215, 55, 40],
+  },
+};
+
 /**
- * Generates an exact 2-page luxury Quotation PDF matching the user's sample (VOWS / LUMINA Package)
+ * Generates an exact 2-page luxury Quotation PDF with custom theme colour and studio settings
  */
-export const generateQuotationPDF = (quote: Quotation) => {
+export const generateQuotationPDF = (
+  quote: Quotation,
+  settings: StudioSettings = defaultStudioSettings
+) => {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -23,30 +67,30 @@ export const generateQuotationPDF = (quote: Quotation) => {
   const margin = 20;
   const contentWidth = pageWidth - margin * 2;
 
-  // Background tint: exact soft sage/ivory from sample (#f3f7f4)
+  const palette = PDF_PALETTES[settings.pdfThemeColor || 'sage'] || PDF_PALETTES.sage;
+
+  // Background tint
   const drawBackground = () => {
-    doc.setFillColor(243, 247, 244);
+    doc.setFillColor(palette.bg[0], palette.bg[1], palette.bg[2]);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
   };
 
-  // Draw Brand Header
+  // Draw Brand Header (LUMINA Only - No VOWS)
   const drawHeader = (yPos: number) => {
-    // Brand Logo text
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(22);
-    doc.setTextColor(15, 23, 20);
-    doc.text('VOWS', margin, yPos);
+    doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
+    doc.text(settings.studioName, margin, yPos);
 
-    // Small sub-brand text
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.5);
-    doc.setTextColor(110, 125, 118);
-    doc.text('Wedding Cinemastory & Stills', margin, yPos + 3.5);
+    doc.setTextColor(palette.muted[0], palette.muted[1], palette.muted[2]);
+    doc.text(settings.tagline, margin, yPos + 3.5);
 
     // Quotation Number top right
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
-    doc.setTextColor(50, 60, 55);
+    doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
     doc.text(quote.quotationNumber, pageWidth - margin, yPos, { align: 'right' });
   };
 
@@ -60,8 +104,8 @@ export const generateQuotationPDF = (quote: Quotation) => {
 
   // 1. Big "PACKAGE" title
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(38);
-  doc.setTextColor(15, 23, 20);
+  doc.setFontSize(36);
+  doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
   doc.text(quote.packageTitle.toUpperCase(), margin, y);
 
   y += 12;
@@ -75,8 +119,8 @@ export const generateQuotationPDF = (quote: Quotation) => {
 
   // 3. Quoted To Block
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
-  doc.setTextColor(15, 23, 20);
+  doc.setFontSize(10);
+  doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
   doc.text('Quoted to:', margin, y);
 
   doc.setFont('helvetica', 'normal');
@@ -87,24 +131,22 @@ export const generateQuotationPDF = (quote: Quotation) => {
   y += 24;
 
   // 4. Requirements & Price Table
-  // Header strip
-  doc.setFillColor(228, 237, 231); // Sage strip
+  doc.setFillColor(palette.strip[0], palette.strip[1], palette.strip[2]);
   doc.roundedRect(margin, y, contentWidth, 9, 1, 1, 'F');
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.setTextColor(25, 35, 30);
+  doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
   doc.text('Requirement', margin + 6, y + 6.2);
   doc.text('Price', pageWidth - margin - 8, y + 6.2, { align: 'right' });
 
   y += 11;
 
-  // Requirement items
   const activeReqs = quote.requirements.filter((r) => r.included);
   activeReqs.forEach((item) => {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9.5);
-    doc.setTextColor(30, 40, 35);
+    doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
     doc.text(item.name, margin + 6, y + 4.5);
 
     const priceText = item.price && item.price !== '-' ? `${item.price}` : '-';
@@ -116,11 +158,11 @@ export const generateQuotationPDF = (quote: Quotation) => {
   y += 2;
 
   // Total Strip
-  doc.setFillColor(228, 237, 231);
+  doc.setFillColor(palette.strip[0], palette.strip[1], palette.strip[2]);
   doc.roundedRect(margin, y, contentWidth, 9, 1, 1, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  doc.setTextColor(15, 23, 20);
+  doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
   doc.text('Total', margin + 6, y + 6.3);
   doc.text(formatINR(quote.totalPrice), pageWidth - margin - 8, y + 6.3, { align: 'right' });
 
@@ -129,34 +171,33 @@ export const generateQuotationPDF = (quote: Quotation) => {
   // 5. Deliverables Header
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
-  doc.setTextColor(15, 23, 20);
+  doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
   doc.text('Deliverables', pageWidth / 2, y, { align: 'center' });
 
   y += 8;
 
   // Deliverables Table Header
-  doc.setFillColor(228, 237, 231);
+  doc.setFillColor(palette.strip[0], palette.strip[1], palette.strip[2]);
   doc.roundedRect(margin, y, contentWidth, 9, 1, 1, 'F');
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.setTextColor(25, 35, 30);
+  doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
   doc.text('Items', margin + 6, y + 6.2);
   doc.text('Details', margin + 95, y + 6.2);
 
   y += 11;
 
-  // Deliverables Rows
   const activeDeliverables = quote.deliverables.filter((d) => d.included);
   activeDeliverables.forEach((item) => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9.5);
-    doc.setTextColor(30, 40, 35);
+    doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
     doc.text(item.item, margin + 6, y + 4.5);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
-    doc.setTextColor(90, 105, 98);
+    doc.setTextColor(palette.muted[0], palette.muted[1], palette.muted[2]);
     const detailsLines = doc.splitTextToSize(item.details, contentWidth - 100);
     doc.text(detailsLines[0] || '', margin + 95, y + 4.5);
 
@@ -173,12 +214,12 @@ export const generateQuotationPDF = (quote: Quotation) => {
   y = 44;
 
   // 6. Crew Members Table
-  doc.setFillColor(228, 237, 231);
+  doc.setFillColor(palette.strip[0], palette.strip[1], palette.strip[2]);
   doc.roundedRect(margin, y, contentWidth, 9, 1, 1, 'F');
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.setTextColor(25, 35, 30);
+  doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
   doc.text('Crew Members', margin + 6, y + 6.2);
   doc.text('Number', pageWidth - margin - 8, y + 6.2, { align: 'right' });
 
@@ -187,7 +228,7 @@ export const generateQuotationPDF = (quote: Quotation) => {
   quote.crewAllocation.forEach((crew) => {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9.5);
-    doc.setTextColor(30, 40, 35);
+    doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
     doc.text(crew.role, margin + 6, y + 4.5);
 
     doc.setFont('helvetica', 'bold');
@@ -196,50 +237,52 @@ export const generateQuotationPDF = (quote: Quotation) => {
     y += 9;
   });
 
-  y += 18;
+  y += 16;
 
-  // 7. Terms & Conditions Title (Centered with Underline)
+  // 7. Terms & Conditions Title
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
-  doc.setTextColor(15, 23, 20);
+  doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
   doc.text('Terms & Conditions', pageWidth / 2, y, { align: 'center' });
   const textWidth = doc.getTextWidth('Terms & Conditions');
-  doc.setDrawColor(15, 23, 20);
+  doc.setDrawColor(palette.text[0], palette.text[1], palette.text[2]);
   doc.setLineWidth(0.4);
   doc.line(pageWidth / 2 - textWidth / 2, y + 1.5, pageWidth / 2 + textWidth / 2, y + 1.5);
 
   y += 12;
 
-  // 8. 12-point Terms List
+  // 8. Terms List (from quote or dynamic settings)
+  const terms = quote.termsAndConditions || settings.termsAndConditions;
   doc.setFontSize(8.5);
-  doc.setTextColor(30, 40, 35);
+  doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
 
-  quote.termsAndConditions.forEach((term, idx) => {
+  terms.forEach((term, idx) => {
     const fullText = `${idx + 1}. ${term}`;
     const wrapped = doc.splitTextToSize(fullText, contentWidth - 4);
-    
-    // Check if we need bold emphasis on key terms
     doc.setFont('helvetica', 'normal');
     doc.text(wrapped, margin + 2, y);
-    y += wrapped.length * 4.8 + 1.8;
+    y += wrapped.length * 4.6 + 1.6;
   });
 
   // 9. Bottom Footer Bar: Contact Name & Phone
   const footerY = pageHeight - 16;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
-  doc.setTextColor(15, 23, 20);
-  doc.text(quote.contactPerson.toUpperCase(), margin, footerY);
-  doc.text(quote.contactPhone, pageWidth - margin, footerY, { align: 'right' });
+  doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
+  doc.text((quote.contactPerson || settings.contactPerson).toUpperCase(), margin, footerY);
+  doc.text(quote.contactPhone || settings.contactPhone, pageWidth - margin, footerY, { align: 'right' });
 
   // Save the 2-page PDF
   doc.save(`${quote.quotationNumber.replace(/\s+/g, '_')}_${quote.clientName.replace(/\s+/g, '_')}.pdf`);
 };
 
 /**
- * Generates an official Tax Invoice PDF with matching high-end styling
+ * Generates an official Tax Invoice PDF with dynamic theme colour and banking remittance
  */
-export const generateInvoicePDF = (invoice: Invoice) => {
+export const generateInvoicePDF = (
+  invoice: Invoice,
+  settings: StudioSettings = defaultStudioSettings
+) => {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -251,35 +294,37 @@ export const generateInvoicePDF = (invoice: Invoice) => {
   const margin = 20;
   const contentWidth = pageWidth - margin * 2;
 
-  // Background tint: exact soft sage/ivory
-  doc.setFillColor(243, 247, 244);
+  const palette = PDF_PALETTES[settings.pdfThemeColor || 'sage'] || PDF_PALETTES.sage;
+
+  // Background tint
+  doc.setFillColor(palette.bg[0], palette.bg[1], palette.bg[2]);
   doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
   // Brand Header
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(22);
-  doc.setTextColor(15, 23, 20);
-  doc.text('LUMINA', margin, 24);
+  doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
+  doc.text(settings.studioName, margin, 24);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7);
-  doc.setTextColor(110, 125, 118);
-  doc.text('Atelier Studios & Cinema // Mangalore', margin, 27.5);
+  doc.setTextColor(palette.muted[0], palette.muted[1], palette.muted[2]);
+  doc.text(settings.tagline, margin, 27.5);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
-  doc.setTextColor(50, 60, 55);
+  doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
   doc.text(invoice.invoiceNumber, pageWidth - margin, 24, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
-  doc.text('GSTIN: 29AABCL1984M1Z8', pageWidth - margin, 28, { align: 'right' });
+  doc.text(`GSTIN: ${settings.gstin}`, pageWidth - margin, 28, { align: 'right' });
 
   let y = 46;
 
   // Title
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(32);
-  doc.setTextColor(15, 23, 20);
+  doc.setFontSize(30);
+  doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
   doc.text('TAX INVOICE', margin, y);
 
   y += 10;
@@ -300,18 +345,18 @@ export const generateInvoicePDF = (invoice: Invoice) => {
   // Status tag
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
-  doc.setTextColor(235, 56, 41);
+  doc.setTextColor(palette.accent[0], palette.accent[1], palette.accent[2]);
   doc.text(`STATUS: ${invoice.status}`, pageWidth - margin, y + 6, { align: 'right' });
 
   y += 24;
 
   // Items Table Header
-  doc.setFillColor(228, 237, 231);
+  doc.setFillColor(palette.strip[0], palette.strip[1], palette.strip[2]);
   doc.roundedRect(margin, y, contentWidth, 9, 1, 1, 'F');
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
-  doc.setTextColor(25, 35, 30);
+  doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
   doc.text('Deliverables & Coverage', margin + 6, y + 6.2);
   doc.text('Qty', margin + 110, y + 6.2);
   doc.text('Amount (INR)', pageWidth - margin - 8, y + 6.2, { align: 'right' });
@@ -321,7 +366,7 @@ export const generateInvoicePDF = (invoice: Invoice) => {
   invoice.items.forEach((item) => {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.setTextColor(30, 40, 35);
+    doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
     const lines = doc.splitTextToSize(item.description, 100);
     doc.text(lines[0], margin + 6, y + 4.5);
     doc.text(`${item.quantity}`, margin + 112, y + 4.5);
@@ -334,11 +379,11 @@ export const generateInvoicePDF = (invoice: Invoice) => {
   y += 4;
 
   // Totals
-  doc.setFillColor(228, 237, 231);
+  doc.setFillColor(palette.strip[0], palette.strip[1], palette.strip[2]);
   doc.roundedRect(margin, y, contentWidth, 9, 1, 1, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  doc.setTextColor(15, 23, 20);
+  doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
   doc.text('Total Invoiced', margin + 6, y + 6.3);
   doc.text(formatINR(invoice.totalAmount), pageWidth - margin - 8, y + 6.3, { align: 'right' });
 
@@ -347,7 +392,7 @@ export const generateInvoicePDF = (invoice: Invoice) => {
   if (invoice.balanceDue > 0) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.setTextColor(235, 56, 41);
+    doc.setTextColor(palette.accent[0], palette.accent[1], palette.accent[2]);
     doc.text(`Balance Payable:  ${formatINR(invoice.balanceDue)}`, pageWidth - margin, y, { align: 'right' });
   } else {
     doc.setFont('helvetica', 'bold');
@@ -358,7 +403,7 @@ export const generateInvoicePDF = (invoice: Invoice) => {
 
   y += 18;
 
-  // Remittance Box
+  // Remittance Box using Dynamic Settings
   doc.setFillColor(255, 255, 255);
   doc.roundedRect(margin, y, contentWidth, 26, 1, 1, 'F');
   doc.setDrawColor(215, 225, 218);
@@ -366,23 +411,23 @@ export const generateInvoicePDF = (invoice: Invoice) => {
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
-  doc.setTextColor(20, 30, 25);
-  doc.text('BANKING REMITTANCE (NEFT / RTGS / IMPS)', margin + 6, y + 6.5);
+  doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
+  doc.text('BANKING REMITTANCE (NEFT / RTGS / IMPS / UPI)', margin + 6, y + 6.5);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.setTextColor(80, 95, 88);
-  doc.text('Account Name: LUMINA ATELIER STUDIOS LLP', margin + 6, y + 12);
-  doc.text('Bank: HDFC Bank Ltd, Hampankatta Branch, Mangalore', margin + 6, y + 17);
-  doc.text('A/C No: 50200084920194  |  IFSC: HDFC0000084', margin + 6, y + 22);
+  doc.setTextColor(palette.muted[0], palette.muted[1], palette.muted[2]);
+  doc.text(`Account Name: ${settings.bankingDetails.accountName}`, margin + 6, y + 12);
+  doc.text(`Bank: ${settings.bankingDetails.bankName}, ${settings.bankingDetails.branch}`, margin + 6, y + 17);
+  doc.text(`A/C No: ${settings.bankingDetails.accountNumber}  |  IFSC: ${settings.bankingDetails.ifscCode}${settings.bankingDetails.upiId ? `  |  UPI: ${settings.bankingDetails.upiId}` : ''}`, margin + 6, y + 22);
 
   // Footer
   const footerY = pageHeight - 16;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
-  doc.setTextColor(15, 23, 20);
-  doc.text('DAN AUREL // STUDIO DIRECTOR', margin, footerY);
-  doc.text('+91 9380057445', pageWidth - margin, footerY, { align: 'right' });
+  doc.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
+  doc.text(`${settings.contactPerson.toUpperCase()} // STUDIO PRINCIPAL`, margin, footerY);
+  doc.text(settings.contactPhone, pageWidth - margin, footerY, { align: 'right' });
 
   doc.save(`${invoice.invoiceNumber}.pdf`);
 };
@@ -390,7 +435,10 @@ export const generateInvoicePDF = (invoice: Invoice) => {
 /**
  * Call Sheet PDF export
  */
-export const generateCallSheetPDF = (shoot: ShootBooking) => {
+export const generateCallSheetPDF = (
+  shoot: ShootBooking,
+  settings: StudioSettings = defaultStudioSettings
+) => {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -402,7 +450,9 @@ export const generateCallSheetPDF = (shoot: ShootBooking) => {
   const margin = 20;
   const contentWidth = pageWidth - margin * 2;
 
-  doc.setFillColor(243, 247, 244);
+  const palette = PDF_PALETTES[settings.pdfThemeColor || 'sage'] || PDF_PALETTES.sage;
+
+  doc.setFillColor(palette.bg[0], palette.bg[1], palette.bg[2]);
   doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
   // Top Bar
@@ -431,7 +481,7 @@ export const generateCallSheetPDF = (shoot: ShootBooking) => {
   // Type
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(235, 56, 41);
+  doc.setTextColor(palette.accent[0], palette.accent[1], palette.accent[2]);
   doc.text(`[ ${shoot.type.toUpperCase()} ]`, margin, y);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(80, 80, 80);
@@ -440,7 +490,7 @@ export const generateCallSheetPDF = (shoot: ShootBooking) => {
   y += 10;
 
   // Logistics Box
-  doc.setFillColor(228, 237, 231);
+  doc.setFillColor(palette.strip[0], palette.strip[1], palette.strip[2]);
   doc.roundedRect(margin, y, contentWidth, 22, 1, 1, 'F');
 
   doc.setTextColor(70, 80, 75);
@@ -451,7 +501,7 @@ export const generateCallSheetPDF = (shoot: ShootBooking) => {
   doc.setFontSize(9);
   doc.text(`${shoot.date} @ ${shoot.callTime}`, margin + 4, y + 12);
   doc.setFontSize(8);
-  doc.setTextColor(235, 56, 41);
+  doc.setTextColor(palette.accent[0], palette.accent[1], palette.accent[2]);
   doc.text(`Wrap Target: ${shoot.endTime}`, margin + 4, y + 17.5);
 
   doc.setTextColor(70, 80, 75);
@@ -474,7 +524,7 @@ export const generateCallSheetPDF = (shoot: ShootBooking) => {
   doc.text('PRODUCTION SCHEDULE TIMELINE', margin, y);
 
   y += 3;
-  doc.setFillColor(228, 237, 231);
+  doc.setFillColor(palette.strip[0], palette.strip[1], palette.strip[2]);
   doc.roundedRect(margin, y, contentWidth, 6, 1, 1, 'F');
   doc.setFontSize(7.5);
   doc.text('TIME', margin + 3, y + 4.2);
@@ -486,7 +536,7 @@ export const generateCallSheetPDF = (shoot: ShootBooking) => {
   shoot.scheduleTimeline.forEach((item) => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
-    doc.setTextColor(235, 56, 41);
+    doc.setTextColor(palette.accent[0], palette.accent[1], palette.accent[2]);
     doc.text(item.time, margin + 3, y + 4);
 
     doc.setFont('helvetica', 'normal');
