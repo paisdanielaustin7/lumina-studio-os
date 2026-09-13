@@ -77,6 +77,38 @@ import {
   subscribeToLuminaRealtime,
 } from '@/lib/supabaseService';
 
+function mergeStudioSettings(prev: StudioSettings, cloud: StudioSettings): StudioSettings {
+  const effectiveCrew =
+    Array.isArray(cloud.crewRoster) && cloud.crewRoster.length > 0
+      ? cloud.crewRoster
+      : Array.isArray(prev.crewRoster) && prev.crewRoster.length > 0
+        ? prev.crewRoster
+        : defaultStudioSettings.crewRoster;
+
+  const effectiveReqs =
+    Array.isArray(cloud.packageRequirements) && cloud.packageRequirements.length > 0
+      ? cloud.packageRequirements
+      : Array.isArray(prev.packageRequirements) && prev.packageRequirements.length > 0
+        ? prev.packageRequirements
+        : defaultStudioSettings.packageRequirements;
+
+  const effectiveDels =
+    Array.isArray(cloud.packageDeliverables) && cloud.packageDeliverables.length > 0
+      ? cloud.packageDeliverables
+      : Array.isArray(prev.packageDeliverables) && prev.packageDeliverables.length > 0
+        ? prev.packageDeliverables
+        : defaultStudioSettings.packageDeliverables;
+
+  return {
+    ...prev,
+    ...cloud,
+    crewRoster: effectiveCrew,
+    packageRequirements: effectiveReqs,
+    packageDeliverables: effectiveDels,
+    uiTheme: cloud.uiTheme || prev.uiTheme || 'slate',
+  };
+}
+
 export default function StudioOSHome() {
   const [activeModule, setActiveModule] = useState<ViewModule>('overview');
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -285,13 +317,16 @@ export default function StudioOSHome() {
           }
 
           if (cloudSettings) {
-            setStudioSettings(cloudSettings);
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('lumina_settings', JSON.stringify(cloudSettings));
-              if (cloudSettings.uiTheme) {
-                document.documentElement.setAttribute('data-theme', cloudSettings.uiTheme);
+            setStudioSettings((prevSettings) => {
+              const merged = mergeStudioSettings(prevSettings, cloudSettings);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('lumina_settings', JSON.stringify(merged));
+                if (merged.uiTheme) {
+                  document.documentElement.setAttribute('data-theme', merged.uiTheme);
+                }
               }
-            }
+              return merged;
+            });
           }
 
           if (cloudQuotes && cloudQuotes.length > 0) setQuotations(cloudQuotes);
@@ -361,10 +396,16 @@ export default function StudioOSHome() {
           });
         },
         onSettingsChange: (newSettings) => {
-          setStudioSettings(newSettings);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('lumina_settings', JSON.stringify(newSettings));
-          }
+          setStudioSettings((prevSettings) => {
+            const merged = mergeStudioSettings(prevSettings, newSettings);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('lumina_settings', JSON.stringify(merged));
+              if (merged.uiTheme) {
+                document.documentElement.setAttribute('data-theme', merged.uiTheme);
+              }
+            }
+            return merged;
+          });
         },
       });
     }
@@ -399,7 +440,18 @@ export default function StudioOSHome() {
             if (l && l.length > 0) setLedger(l);
             if (i && i.length > 0) setInvoices(i);
             if (u && u.length > 0) setUsers(u);
-            if (s) setStudioSettings(s);
+            if (s) {
+              setStudioSettings((prevSettings) => {
+                const merged = mergeStudioSettings(prevSettings, s);
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('lumina_settings', JSON.stringify(merged));
+                  if (merged.uiTheme) {
+                    document.documentElement.setAttribute('data-theme', merged.uiTheme);
+                  }
+                }
+                return merged;
+              });
+            }
           } catch (err) {
             console.warn('[Network] Re-sync error upon internet reconnection:', err);
           }

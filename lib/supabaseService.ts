@@ -59,11 +59,11 @@ export async function fetchSettingsFromCloud(): Promise<StudioSettings | null> {
       contactPhone: data.contact_phone,
       termsAndConditions: data.terms_and_conditions,
       pdfThemeColor: data.pdf_theme_color,
-      customPalettes: data.custom_palettes || [],
-      crewRoster: data.crew_roster || undefined,
+      customPalettes: Array.isArray(data.custom_palettes) ? data.custom_palettes : [],
+      crewRoster: Array.isArray(data.crew_roster) && data.crew_roster.length > 0 ? data.crew_roster : undefined,
       uiTheme: data.ui_theme || 'slate',
-      packageRequirements: data.package_requirements || undefined,
-      packageDeliverables: data.package_deliverables || undefined,
+      packageRequirements: Array.isArray(data.package_requirements) && data.package_requirements.length > 0 ? data.package_requirements : undefined,
+      packageDeliverables: Array.isArray(data.package_deliverables) && data.package_deliverables.length > 0 ? data.package_deliverables : undefined,
     };
   } catch (err) {
     console.warn('[Supabase] Failed to fetch settings:', err);
@@ -302,10 +302,23 @@ export async function syncSettingsToCloud(settings: StudioSettings): Promise<voi
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase.from('lumina_settings').upsert(payload);
-    if (error && error.message && error.message.includes('crew_roster')) {
-      delete payload.crew_roster;
-      await supabase.from('lumina_settings').upsert(payload);
+    let { error } = await supabase.from('lumina_settings').upsert(payload);
+    if (error) {
+      console.warn('[Supabase] syncSettingsToCloud column warning:', error.message);
+      const newerColumns = ['crew_roster', 'ui_theme', 'package_requirements', 'package_deliverables', 'custom_palettes'];
+      for (const col of newerColumns) {
+        if (error?.message?.toLowerCase().includes(col)) {
+          delete payload[col];
+          const retry = await supabase.from('lumina_settings').upsert(payload);
+          error = retry.error;
+        }
+      }
+      if (error && error.message?.toLowerCase().includes('column')) {
+        for (const col of newerColumns) {
+          delete payload[col];
+        }
+        await supabase.from('lumina_settings').upsert(payload);
+      }
     }
   } catch (e) {
     console.error('[Supabase] syncSettingsToCloud error:', e);

@@ -32,7 +32,6 @@ import {
   PDFThemeColor,
   CustomThemePalette,
   UserRole,
-  CrewTemplateItem,
   SiteColorTheme,
 } from '@/types';
 
@@ -55,7 +54,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onOpenLoginModal,
   onResetSampleData,
 }) => {
-  const [activeTab, setActiveTab] = useState<'pdf' | 'banking' | 'crew' | 'terms' | 'users' | 'access'>('pdf');
+  const [activeTab, setActiveTab] = useState<'pdf' | 'banking' | 'terms' | 'users' | 'access'>('pdf');
 
   // Viewer vs Admin edit rights
   const canEdit = currentUser.canAccessSettings;
@@ -101,14 +100,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     canEditLedger: false,
   });
 
-  // Crew Roster Management State
-  const [isCrewModalOpen, setIsCrewModalOpen] = useState(false);
-  const [editingCrewId, setEditingCrewId] = useState<string | null>(null);
-  const [crewRoleInput, setCrewRoleInput] = useState('');
-  const [crewCountInput, setCrewCountInput] = useState(1);
-  const [crewNameInput, setCrewNameInput] = useState('');
-  const [crewPhoneInput, setCrewPhoneInput] = useState('');
-
   // Sample Data Reset Confirmation Modal
   const [showResetModal, setShowResetModal] = useState(false);
 
@@ -120,8 +111,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           setShowAddColorModal(false);
         } else if (isUserModalOpen) {
           setIsUserModalOpen(false);
-        } else if (isCrewModalOpen) {
-          setIsCrewModalOpen(false);
         } else if (showResetModal) {
           setShowResetModal(false);
         }
@@ -129,7 +118,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showAddColorModal, isUserModalOpen, isCrewModalOpen, showResetModal]);
+  }, [showAddColorModal, isUserModalOpen, showResetModal]);
 
   // Sync internal form when settings update from cloud realtime
   useEffect(() => {
@@ -140,80 +129,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const showSuccessFeedback = () => {
     setIsSavedBanner(true);
     setTimeout(() => setIsSavedBanner(false), 3000);
-  };
-
-  // Crew Roster Actions
-  const handleOpenAddCrew = () => {
-    setEditingCrewId(null);
-    setCrewRoleInput('');
-    setCrewCountInput(1);
-    setCrewNameInput('');
-    setCrewPhoneInput('');
-    setIsCrewModalOpen(true);
-  };
-
-  const handleOpenEditCrew = (crew: CrewTemplateItem) => {
-    setEditingCrewId(crew.id);
-    setCrewRoleInput(crew.role);
-    setCrewCountInput(crew.defaultCount);
-    setCrewNameInput(crew.defaultName || '');
-    setCrewPhoneInput(crew.phone || '');
-    setIsCrewModalOpen(true);
-  };
-
-  const handleSaveCrew = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!canEdit || !crewRoleInput.trim()) return;
-
-    const currentRoster: CrewTemplateItem[] = studioForm.crewRoster || [];
-    let updatedRoster: CrewTemplateItem[];
-
-    if (editingCrewId) {
-      updatedRoster = currentRoster.map((c) =>
-        c.id === editingCrewId
-          ? {
-              ...c,
-              role: crewRoleInput.trim(),
-              defaultCount: Math.max(1, crewCountInput),
-              defaultName: crewNameInput.trim() || undefined,
-              phone: crewPhoneInput.trim() || undefined,
-            }
-          : c
-      );
-    } else {
-      const newItem: CrewTemplateItem = {
-        id: `crw-${Date.now()}`,
-        role: crewRoleInput.trim(),
-        defaultCount: Math.max(1, crewCountInput),
-        defaultName: crewNameInput.trim() || undefined,
-        phone: crewPhoneInput.trim() || undefined,
-      };
-      updatedRoster = [...currentRoster, newItem];
-    }
-
-    const updatedSettings: StudioSettings = {
-      ...studioForm,
-      crewRoster: updatedRoster,
-      termsAndConditions: terms,
-    };
-    setStudioForm(updatedSettings);
-    onUpdateSettings(updatedSettings);
-    setIsCrewModalOpen(false);
-    showSuccessFeedback();
-  };
-
-  const handleDeleteCrew = (crewId: string) => {
-    if (!canEdit) return;
-    const currentRoster: CrewTemplateItem[] = studioForm.crewRoster || [];
-    const updatedRoster = currentRoster.filter((c) => c.id !== crewId);
-    const updatedSettings: StudioSettings = {
-      ...studioForm,
-      crewRoster: updatedRoster,
-      termsAndConditions: terms,
-    };
-    setStudioForm(updatedSettings);
-    onUpdateSettings(updatedSettings);
-    showSuccessFeedback();
   };
 
   const handleSaveStudioInfo = (e: React.FormEvent) => {
@@ -473,7 +388,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         {[
           { id: 'pdf', label: 'Site & PDF Themes', icon: Palette },
           { id: 'banking', label: 'Banking & Remittance', icon: Landmark },
-          { id: 'crew', label: `Crew Roster (${(studioForm.crewRoster || []).length})`, icon: Users },
           { id: 'terms', label: `Terms & Conditions (${terms.length})`, icon: FileCheck2 },
           { id: 'users', label: `User Credentials (${users.length})`, icon: KeyRound },
           { id: 'access', label: 'Access Control & Security', icon: ShieldCheck },
@@ -1202,103 +1116,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </form>
       )}
 
-      {/* Tab 3: Production Crew Roster Management */}
-      {activeTab === 'crew' && (
-        <div className="space-y-5 text-xs font-mono">
-          <div className="p-5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="font-serif text-base font-bold uppercase">
-                  Studio Production Crew Roster
-                </h3>
-                <p className="text-[11px] text-bone-muted dark:text-obsidian-muted">
-                  Standard production crew members and equipment operators. These roles automatically populate newly created quotations and can be assigned to bookings.
-                </p>
-              </div>
-
-              {canEdit && (
-                <button
-                  onClick={handleOpenAddCrew}
-                  className="px-3.5 py-1.5 bg-carbon text-bone dark:bg-white dark:text-carbon font-mono text-xs uppercase tracking-wider hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all flex items-center gap-1.5 shrink-0 font-bold"
-                >
-                  <Plus size={13} />
-                  <span>Add Crew Role</span>
-                </button>
-              )}
-            </div>
-
-            {/* Crew Members Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
-              {(studioForm.crewRoster || []).map((crew) => (
-                <div
-                  key={crew.id}
-                  className="p-4 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border flex flex-col justify-between space-y-3 relative group"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <h4 className="font-serif font-bold text-sm text-carbon dark:text-white leading-tight">
-                        {crew.role}
-                      </h4>
-                      <span className="text-[9px] font-mono uppercase px-2 py-0.5 bg-carbon/10 dark:bg-white/10 text-bone-muted dark:text-obsidian-muted font-bold whitespace-nowrap">
-                        {crew.defaultCount} {crew.defaultCount === 1 ? 'Operator' : 'Operators'}
-                      </span>
-                    </div>
-
-                    <div className="space-y-1 text-[11px] text-bone-muted dark:text-obsidian-muted">
-                      <div className="flex items-center gap-1.5">
-                        <User size={12} className="text-vermillion shrink-0" />
-                        <span className="text-carbon dark:text-white font-bold truncate">
-                          {crew.defaultName || 'Unassigned / Open Unit'}
-                        </span>
-                      </div>
-                      {crew.phone && (
-                        <div className="flex items-center gap-1.5">
-                          <Phone size={12} className="shrink-0" />
-                          <a
-                            href={`https://wa.me/${crew.phone.replace(/[^0-9]/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:text-vermillion hover:underline"
-                          >
-                            {crew.phone}
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {canEdit && (
-                    <div className="pt-2 border-t border-bone-border/50 dark:border-obsidian-border/50 flex items-center justify-between text-[10px] uppercase font-mono">
-                      <button
-                        onClick={() => handleOpenEditCrew(crew)}
-                        className="text-bone-muted hover:text-carbon dark:hover:text-white flex items-center gap-1 transition-colors"
-                      >
-                        <Edit3 size={11} />
-                        <span>Edit Role</span>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCrew(crew.id)}
-                        className="text-bone-muted hover:text-vermillion flex items-center gap-1 transition-colors"
-                      >
-                        <Trash2 size={11} />
-                        <span>Delete</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {(!studioForm.crewRoster || studioForm.crewRoster.length === 0) && (
-                <div className="col-span-full p-8 border border-dashed border-bone-border dark:border-obsidian-border text-center text-bone-muted dark:text-obsidian-muted">
-                  No crew members currently configured. Click "Add Crew Role" to create your production roster.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tab 4: Terms & Conditions Management */}
+      {/* Tab 3: Terms & Conditions Management */}
       {activeTab === 'terms' && (
         <div className="space-y-5 text-xs font-mono">
           <div className="p-5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-3">
@@ -1812,103 +1630,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       )}
 
-      {/* Crew Member Add / Edit Modal */}
-      {isCrewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-carbon/70 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-bone-border dark:border-obsidian-border">
-              <h3 className="font-serif text-lg font-bold uppercase text-carbon dark:text-white">
-                {editingCrewId ? 'Edit Crew Role' : 'Add Production Crew Role'}
-              </h3>
-              <button
-                onClick={() => setIsCrewModalOpen(false)}
-                className="text-xs font-mono text-bone-muted hover:text-carbon dark:hover:text-white"
-              >
-                [ESC]
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveCrew} className="space-y-3 text-xs font-mono">
-              <div>
-                <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                  Role Title / Description *
-                </label>
-                <input
-                  type="text"
-                  value={crewRoleInput}
-                  onChange={(e) => setCrewRoleInput(e.target.value)}
-                  placeholder="e.g. Lead Candid Photographer or Drone Pilot"
-                  required
-                  className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white font-bold"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                    Default Headcount *
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={crewCountInput}
-                    onChange={(e) => setCrewCountInput(parseInt(e.target.value) || 1)}
-                    required
-                    className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                    Assigned Person Name
-                  </label>
-                  <input
-                    type="text"
-                    value={crewNameInput}
-                    onChange={(e) => setCrewNameInput(e.target.value)}
-                    placeholder="e.g. Dan Aurel"
-                    className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] uppercase text-bone-muted mb-1">
-                  Contact Phone / WhatsApp
-                </label>
-                <input
-                  type="text"
-                  value={crewPhoneInput}
-                  onChange={(e) => setCrewPhoneInput(e.target.value)}
-                  placeholder="e.g. +91 93800 57445"
-                  className="w-full p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border text-carbon dark:text-white font-mono"
-                />
-              </div>
-
-              <p className="text-[10px] text-bone-muted italic pt-1">
-                * This role will be available for automatic insertion when creating or editing quotations.
-              </p>
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-bone-border dark:border-obsidian-border">
-                <button
-                  type="button"
-                  onClick={() => setIsCrewModalOpen(false)}
-                  className="px-3.5 py-1.5 border border-bone-border dark:border-obsidian-border text-xs uppercase"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-1.5 bg-carbon text-bone dark:bg-white dark:text-carbon font-bold text-xs uppercase hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all"
-                >
-                  {editingCrewId ? 'Update Role' : 'Add to Roster'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Reset Sample Data Confirmation Modal */}
       {showResetModal && onResetSampleData && (
