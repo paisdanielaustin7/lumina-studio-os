@@ -49,6 +49,8 @@ import {
   Menu,
   Cloud,
   CloudOff,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 import Link from 'next/link';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
@@ -79,8 +81,9 @@ export default function StudioOSHome() {
   const [userRole, setUserRole] = useState<UserRole>('ADMIN_DIRECTOR');
   const [selectedShoot, setSelectedShoot] = useState<ShootBooking | null>(null);
 
-  // Supabase Cloud Connection Indicator State
+  // Internet & Supabase Cloud Connection Telemetry State
   const [isCloudConnected, setIsCloudConnected] = useState(false);
+  const [isOnline, setIsOnline] = useState<boolean>(true);
 
   // Authentication & Settings State
   const [studioSettings, setStudioSettings] = useState<StudioSettings>(defaultStudioSettings);
@@ -296,6 +299,52 @@ export default function StudioOSHome() {
     return () => {
       if (unsubscribeRealtime) unsubscribeRealtime();
     };
+  }, []);
+
+  // Network Connectivity (Online / Offline WiFi) Listener & Auto-Resync
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsOnline(navigator.onLine);
+
+      const handleOnline = async () => {
+        setIsOnline(true);
+        if (isSupabaseConfigured()) {
+          setIsCloudConnected(true);
+          try {
+            const [q, e, b, l, i, u, s] = await Promise.all([
+              fetchQuotationsFromCloud(),
+              fetchEnquiriesFromCloud(),
+              fetchBookingsFromCloud(),
+              fetchLedgerFromCloud(),
+              fetchInvoicesFromCloud(),
+              fetchUsersFromCloud(),
+              fetchSettingsFromCloud(),
+            ]);
+            if (q && q.length > 0) setQuotations(q);
+            if (e && e.length > 0) setEnquiries(e);
+            if (b && b.length > 0) setBookings(b);
+            if (l && l.length > 0) setLedger(l);
+            if (i && i.length > 0) setInvoices(i);
+            if (u && u.length > 0) setUsers(u);
+            if (s) setStudioSettings(s);
+          } catch (err) {
+            console.warn('[Network] Re-sync error upon internet reconnection:', err);
+          }
+        }
+      };
+
+      const handleOffline = () => {
+        setIsOnline(false);
+      };
+
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
   }, []);
 
   // Global Ctrl+K / Cmd+K listener for Master Search
@@ -800,22 +849,31 @@ export default function StudioOSHome() {
               <span>ENGINE ONLINE</span>
             </span>
 
-            {/* Supabase Cloud Realtime Sync Status Badge (Always visible on all screen sizes) */}
-            {isCloudConnected ? (
+            {/* Internet Access & Supabase Cloud Telemetry Badge */}
+            {!isOnline ? (
+              <span
+                className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-bold text-[10px] border border-rose-500/40 px-2 py-0.5 bg-rose-500/10 tracking-wider shrink-0 animate-pulse"
+                title="Internet connection offline. Working in local offline cache mode. Changes will auto-sync when WiFi reconnects."
+              >
+                <WifiOff size={11} className="text-rose-500 shrink-0" />
+                <span className="hidden sm:inline">OFFLINE (NO WIFI)</span>
+                <span className="sm:hidden">OFFLINE</span>
+              </span>
+            ) : isCloudConnected ? (
               <span
                 className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] border border-emerald-500/30 px-2 py-0.5 bg-emerald-500/10 tracking-wider shrink-0"
-                title="Supabase real-time cloud synchronization active across all devices"
+                title="Internet connected & Supabase real-time cloud synchronization active"
               >
-                <Cloud size={11} className="text-emerald-500 shrink-0" />
+                <Wifi size={11} className="text-emerald-500 shrink-0" />
                 <span className="hidden sm:inline">CLOUD SYNC LIVE</span>
-                <span className="sm:hidden">CLOUD</span>
+                <span className="sm:hidden">SYNC LIVE</span>
               </span>
             ) : (
               <span
                 className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold text-[10px] border border-amber-500/30 px-2 py-0.5 bg-amber-500/10 tracking-wider shrink-0"
-                title="Running in local storage fallback mode. Add Supabase keys to .env.local for multi-device sync."
+                title="Internet connected, running in local storage fallback mode."
               >
-                <CloudOff size={11} className="text-amber-500 shrink-0" />
+                <Wifi size={11} className="text-amber-500 shrink-0" />
                 <span className="hidden sm:inline">LOCAL STORAGE</span>
                 <span className="sm:hidden">LOCAL</span>
               </span>
@@ -864,6 +922,21 @@ export default function StudioOSHome() {
             </Link>
           </div>
         </div>
+
+        {/* Offline Network Warning Notification Banner */}
+        {!isOnline && (
+          <div className="bg-rose-950/90 border-b border-rose-800/60 text-rose-200 px-3 sm:px-6 py-1.5 text-[10px] sm:text-[11px] font-mono flex items-center justify-between shrink-0 animate-fadeIn">
+            <div className="flex items-center gap-2">
+              <WifiOff size={13} className="text-rose-400 animate-pulse shrink-0" />
+              <span>
+                <strong>NETWORK OFFLINE:</strong> No internet connection detected. You can keep working safely — quotes and payments are saved locally and will auto-sync once WiFi reconnects.
+              </span>
+            </div>
+            <span className="text-[9px] sm:text-[10px] uppercase font-bold text-rose-400 tracking-widest hidden md:inline shrink-0">
+              SAFE LOCAL STORAGE ACTIVE
+            </span>
+          </div>
+        )}
 
         {/* Dynamic Operating Modules */}
         <div className="flex-1 pb-16">
