@@ -108,6 +108,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showAddColorModal, isUserModalOpen]);
 
+  // Sync internal form when settings update from cloud realtime
+  useEffect(() => {
+    setStudioForm(settings);
+    setTerms(settings.termsAndConditions);
+  }, [settings]);
+
   const showSuccessFeedback = () => {
     setIsSavedBanner(true);
     setTimeout(() => setIsSavedBanner(false), 3000);

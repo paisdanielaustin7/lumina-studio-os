@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowDownLeft,
@@ -32,6 +32,11 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
   onUpdateLedger,
 }) => {
   const [entries, setEntries] = useState<LedgerEntry[]>(initialLedger);
+
+  useEffect(() => {
+    setEntries(initialLedger);
+  }, [initialLedger]);
+
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');

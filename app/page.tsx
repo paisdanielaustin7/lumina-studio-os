@@ -47,14 +47,40 @@ import {
   LogOut,
   Search,
   Menu,
+  Cloud,
+  CloudOff,
 } from 'lucide-react';
 import Link from 'next/link';
+import { isSupabaseConfigured } from '@/lib/supabaseClient';
+import {
+  fetchUsersFromCloud,
+  fetchSettingsFromCloud,
+  fetchQuotationsFromCloud,
+  fetchEnquiriesFromCloud,
+  fetchBookingsFromCloud,
+  fetchLedgerFromCloud,
+  fetchInvoicesFromCloud,
+  syncQuotationToCloud,
+  syncBookingToCloud,
+  syncEnquiryToCloud,
+  syncLedgerEntryToCloud,
+  deleteLedgerEntryFromCloud,
+  syncInvoiceToCloud,
+  syncUserToCloud,
+  deleteUserFromCloud,
+  syncSettingsToCloud,
+  seedCloudIfEmpty,
+  subscribeToLuminaRealtime,
+} from '@/lib/supabaseService';
 
 export default function StudioOSHome() {
   const [activeModule, setActiveModule] = useState<ViewModule>('overview');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [userRole, setUserRole] = useState<UserRole>('ADMIN_DIRECTOR');
   const [selectedShoot, setSelectedShoot] = useState<ShootBooking | null>(null);
+
+  // Supabase Cloud Connection Indicator State
+  const [isCloudConnected, setIsCloudConnected] = useState(false);
 
   // Authentication & Settings State
   const [studioSettings, setStudioSettings] = useState<StudioSettings>(defaultStudioSettings);
@@ -76,6 +102,7 @@ export default function StudioOSHome() {
   // Restore saved users & active session from browser storage on mount
   useEffect(() => {
     let activeUsersList = defaultUsers;
+    let savedSession: string | null = null;
 
     if (typeof window !== 'undefined') {
       const savedUsers = localStorage.getItem('lumina_users');
@@ -102,7 +129,7 @@ export default function StudioOSHome() {
       }
 
       // Check active session
-      const savedSession = sessionStorage.getItem('lumina_active_session');
+      savedSession = sessionStorage.getItem('lumina_active_session');
       if (savedSession) {
         try {
           const session = JSON.parse(savedSession);
@@ -120,6 +147,123 @@ export default function StudioOSHome() {
     }
 
     setIsAuthChecking(false);
+
+    // If Supabase credentials are configured, connect to Cloud and listen to Realtime
+    let unsubscribeRealtime: (() => void) | null = null;
+
+    if (isSupabaseConfigured()) {
+      setIsCloudConnected(true);
+
+      const loadCloudData = async () => {
+        try {
+          const [
+            cloudUsers,
+            cloudSettings,
+            cloudQuotes,
+            cloudEnquiries,
+            cloudBookings,
+            cloudLedger,
+            cloudInvoices,
+          ] = await Promise.all([
+            fetchUsersFromCloud(),
+            fetchSettingsFromCloud(),
+            fetchQuotationsFromCloud(),
+            fetchEnquiriesFromCloud(),
+            fetchBookingsFromCloud(),
+            fetchLedgerFromCloud(),
+            fetchInvoicesFromCloud(),
+          ]);
+
+          let effectiveUsers = activeUsersList;
+          if (cloudUsers && cloudUsers.length > 0) {
+            effectiveUsers = cloudUsers;
+            setUsers(cloudUsers);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('lumina_users', JSON.stringify(cloudUsers));
+            }
+          }
+
+          if (cloudSettings) {
+            setStudioSettings(cloudSettings);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('lumina_settings', JSON.stringify(cloudSettings));
+            }
+          }
+
+          if (cloudQuotes && cloudQuotes.length > 0) setQuotations(cloudQuotes);
+          if (cloudEnquiries && cloudEnquiries.length > 0) setEnquiries(cloudEnquiries);
+          if (cloudBookings && cloudBookings.length > 0) setBookings(cloudBookings);
+          if (cloudLedger && cloudLedger.length > 0) setLedger(cloudLedger);
+          if (cloudInvoices && cloudInvoices.length > 0) setInvoices(cloudInvoices);
+
+          // Seed default database data if freshly deployed and completely empty
+          if (
+            (!cloudUsers || cloudUsers.length === 0) &&
+            (!cloudQuotes || cloudQuotes.length === 0)
+          ) {
+            await seedCloudIfEmpty({
+              users: defaultUsers,
+              settings: defaultStudioSettings,
+              quotations: mockQuotations,
+              enquiries: mockEnquiries,
+              bookings: mockShoots,
+              ledger: mockLedger,
+              invoices: mockInvoices,
+            });
+          }
+
+          // Refresh active session against latest cloud permissions
+          if (savedSession) {
+            try {
+              const session = JSON.parse(savedSession);
+              const matched = effectiveUsers.find(
+                (u) => u.id === session.userId || u.username === session.username
+              );
+              if (matched) {
+                setCurrentUser(matched);
+                setUserRole(matched.role);
+              }
+            } catch (e) {
+              console.error('Session sync error', e);
+            }
+          }
+        } catch (err) {
+          console.warn('[Supabase] Initial cloud load error, falling back to local storage:', err);
+        }
+      };
+
+      loadCloudData();
+
+      // Establish real-time websocket listener across all 7 PostgreSQL tables
+      unsubscribeRealtime = subscribeToLuminaRealtime({
+        onQuotationsChange: (quotes) => setQuotations(quotes),
+        onEnquiriesChange: (enqs) => setEnquiries(enqs),
+        onBookingsChange: (bks) => setBookings(bks),
+        onLedgerChange: (led) => setLedger(led),
+        onInvoicesChange: (invs) => setInvoices(invs),
+        onUsersChange: (newUsers) => {
+          setUsers(newUsers);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('lumina_users', JSON.stringify(newUsers));
+          }
+          setCurrentUser((prev) => {
+            if (!prev) return prev;
+            const matched = newUsers.find((u) => u.id === prev.id);
+            return matched || prev;
+          });
+        },
+        onSettingsChange: (newSettings) => {
+          setStudioSettings(newSettings);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('lumina_settings', JSON.stringify(newSettings));
+          }
+        },
+      });
+    }
+
+    return () => {
+      if (unsubscribeRealtime) unsubscribeRealtime();
+    };
   }, []);
 
   // Global Ctrl+K / Cmd+K listener for Master Search
@@ -135,6 +279,20 @@ export default function StudioOSHome() {
   }, []);
 
   const handleUpdateUsers = (newUsers: UserAccount[]) => {
+    const previousUserIds = new Set(users.map((u) => u.id));
+    const currentUserIds = new Set(newUsers.map((u) => u.id));
+
+    // Handle user deletions in cloud
+    previousUserIds.forEach((id) => {
+      if (!currentUserIds.has(id)) {
+        deleteUserFromCloud(id);
+      }
+    });
+    // Handle user upserts in cloud
+    newUsers.forEach((u) => {
+      syncUserToCloud(u);
+    });
+
     setUsers(newUsers);
     if (typeof window !== 'undefined') {
       localStorage.setItem('lumina_users', JSON.stringify(newUsers));
@@ -146,6 +304,7 @@ export default function StudioOSHome() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('lumina_settings', JSON.stringify(newSettings));
     }
+    syncSettingsToCloud(newSettings);
   };
 
   const handleLoginSuccess = (user: UserAccount) => {
@@ -181,12 +340,14 @@ export default function StudioOSHome() {
   // 1. Add new quotation
   const handleAddQuotation = (quote: Quotation) => {
     setQuotations([quote, ...quotations]);
+    syncQuotationToCloud(quote);
   };
 
   // 2. Update quotation with Cascading Updates (Quotation -> ShootBooking Order -> Tax Invoice)
   const handleUpdateQuotation = (quote: Quotation) => {
-    // A. Update quote in state
+    // A. Update quote in state & cloud
     setQuotations((prev) => prev.map((q) => (q.id === quote.id ? quote : q)));
+    syncQuotationToCloud(quote);
 
     // B. Cascade to linked ShootBooking (Order) if already converted
     let cascadedBookingFound = false;
@@ -200,7 +361,7 @@ export default function StudioOSHome() {
           const newTotal = quote.totalPrice;
           const retainerPaid = b.financialSummary.retainerPaid;
           const newBalance = Math.max(0, newTotal - retainerPaid);
-          return {
+          const updatedBooking: ShootBooking = {
             ...b,
             title: `${quote.clientName}: ${quote.packageTitle}`,
             client: {
@@ -217,6 +378,8 @@ export default function StudioOSHome() {
               balanceDue: newBalance,
             },
           };
+          syncBookingToCloud(updatedBooking);
+          return updatedBooking;
         }
         return b;
       })
@@ -230,7 +393,7 @@ export default function StudioOSHome() {
           const newTotal = quote.totalPrice;
           const prevPaid = Math.max(0, inv.totalAmount - inv.balanceDue);
           const newBalance = Math.max(0, newTotal - prevPaid);
-          return {
+          const updatedInvoice: Invoice = {
             ...inv,
             clientName: quote.clientName,
             brand: quote.packageTitle,
@@ -248,6 +411,8 @@ export default function StudioOSHome() {
               },
             ],
           };
+          syncInvoiceToCloud(updatedInvoice);
+          return updatedInvoice;
         }
         return inv;
       })
@@ -265,6 +430,7 @@ export default function StudioOSHome() {
   // 3. Add new client enquiry
   const handleAddEnquiry = (enquiry: Enquiry) => {
     setEnquiries([enquiry, ...enquiries]);
+    syncEnquiryToCloud(enquiry);
   };
 
   // 4. One-Click Conversion: Quotation -> Confirmed Booking / Order
@@ -277,9 +443,14 @@ export default function StudioOSHome() {
 
     if (quote.enquiryId) {
       setEnquiries(
-        enquiries.map((e) =>
-          e.id === quote.enquiryId ? { ...e, status: 'CONVERTED' } : e
-        )
+        enquiries.map((e) => {
+          if (e.id === quote.enquiryId) {
+            const updatedEnq = { ...e, status: 'CONVERTED' as const };
+            syncEnquiryToCloud(updatedEnq);
+            return updatedEnq;
+          }
+          return e;
+        })
       );
     }
 
@@ -347,6 +518,7 @@ export default function StudioOSHome() {
     };
 
     setBookings([newBooking, ...bookings]);
+    syncBookingToCloud(newBooking);
 
     const newInvoice: Invoice = {
       id: `inv-${Date.now()}`,
@@ -373,6 +545,7 @@ export default function StudioOSHome() {
     };
 
     setInvoices([newInvoice, ...invoices]);
+    syncInvoiceToCloud(newInvoice);
 
     alert(`Order ${code} created successfully! Added to Calendar and Invoices.`);
   };
@@ -400,6 +573,7 @@ export default function StudioOSHome() {
       paymentMethod: payment.paymentMethod,
     };
     setLedger([newLedgerEntry, ...ledger]);
+    syncLedgerEntryToCloud(newLedgerEntry);
 
     setBookings(
       bookings.map((b) => {
@@ -409,7 +583,7 @@ export default function StudioOSHome() {
         ) {
           const newPaid = b.financialSummary.retainerPaid + payment.amount;
           const newBal = Math.max(0, b.financialSummary.totalFee - newPaid);
-          return {
+          const updatedBooking: ShootBooking = {
             ...b,
             financialSummary: {
               ...b.financialSummary,
@@ -417,6 +591,8 @@ export default function StudioOSHome() {
               balanceDue: newBal,
             },
           };
+          syncBookingToCloud(updatedBooking);
+          return updatedBooking;
         }
         return b;
       })
@@ -426,11 +602,13 @@ export default function StudioOSHome() {
       invoices.map((inv) => {
         if (inv.clientName.toLowerCase() === payment.clientName.toLowerCase()) {
           const newBal = Math.max(0, inv.balanceDue - payment.amount);
-          return {
+          const updatedInv: Invoice = {
             ...inv,
             balanceDue: newBal,
             status: newBal === 0 ? 'PAID' : 'PARTIAL',
           };
+          syncInvoiceToCloud(updatedInv);
+          return updatedInv;
         }
         return inv;
       })
@@ -466,8 +644,32 @@ export default function StudioOSHome() {
     }
   ) => {
     setBookings(
-      bookings.map((b) => (b.id === bookingId ? { ...b, ...updates } : b))
+      bookings.map((b) => {
+        if (b.id === bookingId) {
+          const updated = { ...b, ...updates };
+          syncBookingToCloud(updated);
+          return updated;
+        }
+        return b;
+      })
     );
+  };
+
+  // 7. General Ledger Updates & Deletions
+  const handleUpdateLedger = (newEntries: LedgerEntry[]) => {
+    const previousIds = new Set(ledger.map((e) => e.id));
+    const currentIds = new Set(newEntries.map((e) => e.id));
+
+    previousIds.forEach((id) => {
+      if (!currentIds.has(id)) {
+        deleteLedgerEntryFromCloud(id);
+      }
+    });
+    newEntries.forEach((entry) => {
+      syncLedgerEntryToCloud(entry);
+    });
+
+    setLedger(newEntries);
   };
 
   const handleSwitchUser = (user: UserAccount) => {
@@ -565,6 +767,28 @@ export default function StudioOSHome() {
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping" />
               <span className="hidden xs:inline">ENGINE</span> ONLINE
             </span>
+
+            {/* Supabase Cloud Realtime Sync Status Badge */}
+            {isCloudConnected ? (
+              <span
+                className="hidden xs:flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] border border-emerald-500/30 px-2 py-0.5 bg-emerald-500/10 tracking-wider"
+                title="Supabase real-time cloud synchronization active across all devices"
+              >
+                <Cloud size={11} className="text-emerald-500" />
+                <span className="hidden sm:inline">CLOUD SYNC LIVE</span>
+                <span className="sm:hidden">CLOUD</span>
+              </span>
+            ) : (
+              <span
+                className="hidden xs:flex items-center gap-1.5 text-bone-muted dark:text-obsidian-muted text-[10px] border border-bone-border dark:border-obsidian-border px-2 py-0.5 bg-bone-card/50 dark:bg-obsidian-card/50 tracking-wider"
+                title="Running in local storage fallback mode. Add Supabase keys to .env.local for multi-device sync."
+              >
+                <CloudOff size={11} className="text-amber-500/80" />
+                <span className="hidden sm:inline">LOCAL STORAGE</span>
+                <span className="sm:hidden">LOCAL</span>
+              </span>
+            )}
+
             <span className="text-bone-muted dark:text-obsidian-muted hidden md:inline truncate max-w-xs lg:max-w-md">
               // ACTIVE IDENTITY: {currentUser.fullName} (@{currentUser.username}) [
               {currentUser.role === 'ADMIN_DIRECTOR' ? 'ROOT DIRECTOR' : 'RESTRICTED CREW'}]
@@ -651,7 +875,7 @@ export default function StudioOSHome() {
               initialLedger={ledger}
               currentUser={currentUser}
               onOpenLoginModal={() => setIsLoginModalOpen(true)}
-              onUpdateLedger={setLedger}
+              onUpdateLedger={handleUpdateLedger}
             />
           )}
 
