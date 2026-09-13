@@ -61,6 +61,9 @@ export async function fetchSettingsFromCloud(): Promise<StudioSettings | null> {
       pdfThemeColor: data.pdf_theme_color,
       customPalettes: data.custom_palettes || [],
       crewRoster: data.crew_roster || undefined,
+      uiTheme: data.ui_theme || 'slate',
+      packageRequirements: data.package_requirements || undefined,
+      packageDeliverables: data.package_deliverables || undefined,
     };
   } catch (err) {
     console.warn('[Supabase] Failed to fetch settings:', err);
@@ -230,6 +233,7 @@ export async function fetchInvoicesFromCloud(): Promise<Invoice[] | null> {
       totalAmount: Number(row.total_amount),
       balanceDue: Number(row.balance_due),
       status: row.status,
+      quotationId: row.quotation_id || undefined,
     }));
   } catch (err) {
     console.warn('[Supabase] Failed to fetch invoices:', err);
@@ -292,6 +296,9 @@ export async function syncSettingsToCloud(settings: StudioSettings): Promise<voi
       pdf_theme_color: settings.pdfThemeColor,
       custom_palettes: settings.customPalettes || [],
       crew_roster: settings.crewRoster || [],
+      ui_theme: settings.uiTheme || 'slate',
+      package_requirements: settings.packageRequirements || [],
+      package_deliverables: settings.packageDeliverables || [],
       updated_at: new Date().toISOString(),
     };
 
@@ -436,6 +443,7 @@ export async function syncInvoiceToCloud(inv: Invoice): Promise<void> {
       total_amount: inv.totalAmount,
       balance_due: inv.balanceDue,
       status: inv.status,
+      quotation_id: inv.quotationId || null,
     });
   } catch (e) {
     console.error('[Supabase] syncInvoiceToCloud error:', e);

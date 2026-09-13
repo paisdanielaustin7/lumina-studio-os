@@ -24,6 +24,7 @@ import {
   EyeOff,
   Phone,
   RotateCcw,
+  CheckCircle,
 } from 'lucide-react';
 import {
   StudioSettings,
@@ -32,6 +33,7 @@ import {
   CustomThemePalette,
   UserRole,
   CrewTemplateItem,
+  SiteColorTheme,
 } from '@/types';
 
 interface SettingsViewProps {
@@ -53,7 +55,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onOpenLoginModal,
   onResetSampleData,
 }) => {
-  const [activeTab, setActiveTab] = useState<'pdf' | 'banking' | 'crew' | 'terms' | 'users'>('pdf');
+  const [activeTab, setActiveTab] = useState<'pdf' | 'banking' | 'crew' | 'terms' | 'users' | 'access'>('pdf');
 
   // Viewer vs Admin edit rights
   const canEdit = currentUser.canAccessSettings;
@@ -469,11 +471,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {/* Navigation Tabs */}
       <div className="flex items-center overflow-x-auto gap-1.5 border-b border-bone-border dark:border-obsidian-border pb-2 text-xs font-mono whitespace-nowrap">
         {[
-          { id: 'pdf', label: 'PDF Themes & Studio Info', icon: Palette },
+          { id: 'pdf', label: 'Site & PDF Themes', icon: Palette },
           { id: 'banking', label: 'Banking & Remittance', icon: Landmark },
           { id: 'crew', label: `Crew Roster (${(studioForm.crewRoster || []).length})`, icon: Users },
           { id: 'terms', label: `Terms & Conditions (${terms.length})`, icon: FileCheck2 },
-          { id: 'users', label: `User Accounts & Credentials (${users.length})`, icon: ShieldCheck },
+          { id: 'users', label: `User Credentials (${users.length})`, icon: KeyRound },
+          { id: 'access', label: 'Access Control & Security', icon: ShieldCheck },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -494,9 +497,127 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         })}
       </div>
 
-      {/* Tab 1: PDF Theme Color & Studio Info */}
+      {/* Tab 1: Themes & Studio Info */}
       {activeTab === 'pdf' && (
         <form onSubmit={handleSaveStudioInfo} className="space-y-6 text-xs font-mono">
+          {/* Site Interface Color Theme Selector */}
+          <div className="p-4 sm:p-5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div>
+                <h3 className="font-serif text-base font-bold uppercase">Site Interface Color Theme</h3>
+                <p className="text-[11px] text-bone-muted dark:text-obsidian-muted">
+                  Operating atmosphere for the entire studio OS. Synced seamlessly across Light and Dark modes.
+                </p>
+              </div>
+              <span className="text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 bg-vermillion text-white font-bold self-start sm:self-auto">
+                Active: {(studioForm.uiTheme || 'slate').toUpperCase()}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-1">
+              {[
+                {
+                  id: 'slate' as SiteColorTheme,
+                  name: 'Atelier Slate',
+                  sub: 'Default Haute Refinement',
+                  lightBg: '#f8fafc',
+                  darkBg: '#0b1120',
+                  desc: 'Deep slate navy with crisp alabaster whites & pure charcoal borders.',
+                },
+                {
+                  id: 'obsidian' as SiteColorTheme,
+                  name: 'Obsidian Noir',
+                  sub: 'High-Contrast Editorial',
+                  lightBg: '#faf9f5',
+                  darkBg: '#09090b',
+                  desc: 'Brutalist jet black paired with warm bone ivory tones.',
+                },
+                {
+                  id: 'sage' as SiteColorTheme,
+                  name: 'Coastal Sage',
+                  sub: 'Botanical Atmosphere',
+                  lightBg: '#f4f7f5',
+                  darkBg: '#08140e',
+                  desc: 'Mangalore coastal eucalyptus green with pale mint undertones.',
+                },
+                {
+                  id: 'mocha' as SiteColorTheme,
+                  name: 'Warm Espresso',
+                  sub: 'Earth & Leather Tone',
+                  lightBg: '#faf6f0',
+                  darkBg: '#17120e',
+                  desc: 'Rich roasted espresso brown with warm cashmere cream highlights.',
+                },
+                {
+                  id: 'cobalt' as SiteColorTheme,
+                  name: 'Deep Cobalt',
+                  sub: 'Nocturne Midnight Blue',
+                  lightBg: '#f0f4f9',
+                  darkBg: '#060d1b',
+                  desc: 'Oceanic midnight indigo with frosted arctic ice accents.',
+                },
+              ].map((themeOpt) => {
+                const isSelected = (studioForm.uiTheme || 'slate') === themeOpt.id;
+                return (
+                  <button
+                    key={themeOpt.id}
+                    type="button"
+                    onClick={() => {
+                      const updated = { ...studioForm, uiTheme: themeOpt.id };
+                      setStudioForm(updated);
+                      onUpdateSettings(updated);
+                      if (typeof document !== 'undefined') {
+                        document.documentElement.setAttribute('data-theme', themeOpt.id);
+                      }
+                      showSuccessFeedback();
+                    }}
+                    className={`p-3 border text-left transition-all relative flex flex-col justify-between ${
+                      isSelected
+                        ? 'border-vermillion bg-bone-surface dark:bg-obsidian-surface ring-1 ring-vermillion'
+                        : 'border-bone-border dark:border-obsidian-border bg-bone-card dark:bg-obsidian-card hover:border-carbon dark:hover:border-white'
+                    }`}
+                  >
+                    {isSelected && (
+                      <span className="absolute top-2 right-2 text-vermillion">
+                        <Check size={14} />
+                      </span>
+                    )}
+
+                    <div className="space-y-1.5">
+                      {/* Split Light & Dark preview swatch */}
+                      <div className="h-6 w-full flex rounded-xs overflow-hidden border border-bone-border dark:border-obsidian-border">
+                        <div
+                          className="flex-1 flex items-center justify-center text-[8px] font-bold text-slate-800"
+                          style={{ backgroundColor: themeOpt.lightBg }}
+                        >
+                          LIGHT
+                        </div>
+                        <div
+                          className="flex-1 flex items-center justify-center text-[8px] font-bold text-white"
+                          style={{ backgroundColor: themeOpt.darkBg }}
+                        >
+                          DARK
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="font-serif font-bold text-xs uppercase text-carbon dark:text-white">
+                          {themeOpt.name}
+                        </p>
+                        <p className="text-[9px] font-mono text-vermillion uppercase">
+                          {themeOpt.sub}
+                        </p>
+                      </div>
+                      <p className="text-[10px] text-bone-muted dark:text-obsidian-muted line-clamp-2">
+                        {themeOpt.desc}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* PDF Theme Palette Selector */}
           <div className="p-4 sm:p-5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
@@ -1388,6 +1509,117 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 );
               })}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 6: Access Control & Security Matrix */}
+      {activeTab === 'access' && (
+        <div className="space-y-6 text-xs font-mono animate-fadeIn">
+          {/* Active Identity Card */}
+          <div className="p-5 sm:p-6 bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-vermillion font-bold">
+                Currently Authenticated Identity
+              </span>
+              <h3 className="text-2xl font-serif font-bold uppercase text-carbon dark:text-white">
+                {currentUser.fullName}
+              </h3>
+              <p className="text-xs font-mono text-bone-muted dark:text-obsidian-muted">
+                Username: <code className="text-carbon dark:text-white font-bold">@{currentUser.username}</code> | Assigned Role:{' '}
+                <span className="font-bold uppercase text-carbon dark:text-white">{currentUser.role}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="px-3 py-1 bg-green-500/10 border border-green-500/30 text-green-600 dark:text-green-400 font-mono text-xs uppercase font-bold">
+                Engine Session Active
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-5 sm:p-6 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-serif text-xl font-bold uppercase text-carbon dark:text-white">
+                  Director (Root Principal)
+                </h2>
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 bg-vermillion text-white font-bold">
+                  Full Read / Write
+                </span>
+              </div>
+              <p className="text-xs font-mono text-bone-muted dark:text-obsidian-muted">
+                Full cryptographic control over dual general ledger, client billing, shoot pricing, catalog templates, and master call sheets.
+              </p>
+              <ul className="space-y-2 text-xs font-mono">
+                <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle size={14} /> <span>General Ledger RLS bypass</span>
+                </li>
+                <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle size={14} /> <span>Create / Modify / Void Invoices & Quotes</span>
+                </li>
+                <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle size={14} /> <span>Add / Edit User Credentials & Permissions</span>
+                </li>
+                <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle size={14} /> <span>Studio Catalog, Deliverables & Requirements Admin</span>
+                </li>
+              </ul>
+              <div className="pt-2">
+                <div className="w-full py-2 text-center text-xs font-mono uppercase tracking-widest border border-bone-border dark:border-obsidian-border bg-bone-surface dark:bg-obsidian-surface text-bone-muted dark:text-obsidian-muted font-bold">
+                  {currentUser.role === 'ADMIN_DIRECTOR' ? 'Active Authenticated Role' : 'Admin Credentials Required'}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-5 sm:p-6 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-serif text-xl font-bold uppercase text-carbon dark:text-white">
+                  Second Unit / Crew
+                </h2>
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 bg-carbon/10 dark:bg-white/10 font-bold">
+                  Restricted Call Sheets
+                </span>
+              </div>
+              <p className="text-xs font-mono text-bone-muted dark:text-obsidian-muted">
+                Confined strictly to schedule timeline, call times, location coordinates, and equipment allocations. Financial ledgers remain obfuscated.
+              </p>
+              <ul className="space-y-2 text-xs font-mono">
+                <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle size={14} /> <span>Read-only access to assigned call sheets</span>
+                </li>
+                <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle size={14} /> <span>Edit call sheet checklist & delivery notes</span>
+                </li>
+                <li className="flex items-center gap-2 text-vermillion">
+                  <Lock size={14} /> <span>Financial retainers & ledger hidden</span>
+                </li>
+                <li className="flex items-center gap-2 text-vermillion">
+                  <Lock size={14} /> <span>Studio settings & credentials locked</span>
+                </li>
+              </ul>
+              <div className="pt-2">
+                <div className="w-full py-2 text-center text-xs font-mono uppercase tracking-widest border border-bone-border dark:border-obsidian-border bg-bone-surface dark:bg-obsidian-surface text-bone-muted dark:text-obsidian-muted font-bold">
+                  Assigned to Crew Unit
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p className="font-bold text-carbon dark:text-white uppercase">User Accounts & Granular Permissions</p>
+              <p className="text-[11px] text-bone-muted dark:text-obsidian-muted">
+                Configure passwords, roles, and granular toggle flags for staff members in the credentials panel.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveTab('users')}
+              className="px-4 py-2 bg-carbon text-bone dark:bg-white dark:text-carbon text-xs font-mono uppercase tracking-wider font-bold hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all flex items-center gap-2 shrink-0"
+            >
+              <KeyRound size={14} />
+              <span>Go to User Credentials Tab</span>
+            </button>
           </div>
         </div>
       )}

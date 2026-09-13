@@ -8,6 +8,7 @@ import { LedgerView } from '@/components/LedgerView';
 import { InvoicesView } from '@/components/InvoicesView';
 import { QuotationView } from '@/components/QuotationView';
 import { SettingsView } from '@/components/SettingsView';
+import { CatalogView } from '@/components/CatalogView';
 import { LoginModal } from '@/components/LoginModal';
 import { LoginPage } from '@/components/LoginPage';
 import { MasterSearchModal } from '@/components/MasterSearchModal';
@@ -114,8 +115,17 @@ export default function StudioOSHome() {
         try {
           const parsed = JSON.parse(savedUsers);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            activeUsersList = parsed;
-            setUsers(parsed);
+            // Permanently filter out legacy dummy accounts of roshan and farooq
+            const sanitized = parsed.filter(
+              (u: UserAccount) =>
+                u.id !== 'usr-roshan' &&
+                u.id !== 'usr-farooq' &&
+                u.username.toLowerCase() !== 'roshan' &&
+                u.username.toLowerCase() !== 'farooq'
+            );
+            activeUsersList = sanitized.length > 0 ? sanitized : defaultUsers;
+            setUsers(activeUsersList);
+            localStorage.setItem('lumina_users', JSON.stringify(activeUsersList));
           }
         } catch (e) {
           console.error('Failed to parse saved users', e);
@@ -127,6 +137,9 @@ export default function StudioOSHome() {
         try {
           const parsedSettings = JSON.parse(savedSettings);
           setStudioSettings(parsedSettings);
+          if (parsedSettings.uiTheme) {
+            document.documentElement.setAttribute('data-theme', parsedSettings.uiTheme);
+          }
         } catch (e) {
           console.error('Failed to parse saved settings', e);
         }
@@ -181,36 +194,64 @@ export default function StudioOSHome() {
             fetchInvoicesFromCloud(),
           ]);
 
-          let effectiveUsers = activeUsersList;
+          // Permanently delete roshan and farooq from Supabase cloud if they exist
           if (cloudUsers && cloudUsers.length > 0) {
-            // Auto-merge: check if this device has any local users created prior to Supabase connection
-            const cloudUsernames = new Set(cloudUsers.map((u) => u.username.toLowerCase()));
+            const deprecated = cloudUsers.filter(
+              (u) =>
+                u.id === 'usr-roshan' ||
+                u.id === 'usr-farooq' ||
+                u.username.toLowerCase() === 'roshan' ||
+                u.username.toLowerCase() === 'farooq'
+            );
+            for (const du of deprecated) {
+              await deleteUserFromCloud(du.id);
+            }
+          }
+
+          const cleanedCloudUsers = cloudUsers
+            ? cloudUsers.filter(
+                (u) =>
+                  u.id !== 'usr-roshan' &&
+                  u.id !== 'usr-farooq' &&
+                  u.username.toLowerCase() !== 'roshan' &&
+                  u.username.toLowerCase() !== 'farooq'
+              )
+            : [];
+
+          let effectiveUsers = activeUsersList;
+          if (cleanedCloudUsers && cleanedCloudUsers.length > 0) {
+            const cloudUsernames = new Set(cleanedCloudUsers.map((u) => u.username.toLowerCase()));
             const localOnlyUsers = activeUsersList.filter(
               (u) => !cloudUsernames.has(u.username.toLowerCase())
             );
 
             if (localOnlyUsers.length > 0) {
-              console.log('[Supabase] Auto-syncing pre-existing local users to cloud:', localOnlyUsers);
               for (const lu of localOnlyUsers) {
                 await syncUserToCloud(lu);
               }
               const reloadedUsers = await fetchUsersFromCloud();
-              if (reloadedUsers && reloadedUsers.length > 0) {
-                effectiveUsers = reloadedUsers;
-                setUsers(reloadedUsers);
+              const sanitizedReloaded = (reloadedUsers || []).filter(
+                (u) =>
+                  u.id !== 'usr-roshan' &&
+                  u.id !== 'usr-farooq' &&
+                  u.username.toLowerCase() !== 'roshan' &&
+                  u.username.toLowerCase() !== 'farooq'
+              );
+              if (sanitizedReloaded.length > 0) {
+                effectiveUsers = sanitizedReloaded;
+                setUsers(sanitizedReloaded);
                 if (typeof window !== 'undefined') {
-                  localStorage.setItem('lumina_users', JSON.stringify(reloadedUsers));
+                  localStorage.setItem('lumina_users', JSON.stringify(sanitizedReloaded));
                 }
               }
             } else {
-              effectiveUsers = cloudUsers;
-              setUsers(cloudUsers);
+              effectiveUsers = cleanedCloudUsers;
+              setUsers(cleanedCloudUsers);
               if (typeof window !== 'undefined') {
-                localStorage.setItem('lumina_users', JSON.stringify(cloudUsers));
+                localStorage.setItem('lumina_users', JSON.stringify(cleanedCloudUsers));
               }
             }
           } else if (activeUsersList && activeUsersList.length > 0) {
-            // Cloud has 0 users, upload all active users to cloud
             for (const u of activeUsersList) {
               await syncUserToCloud(u);
             }
@@ -220,6 +261,9 @@ export default function StudioOSHome() {
             setStudioSettings(cloudSettings);
             if (typeof window !== 'undefined') {
               localStorage.setItem('lumina_settings', JSON.stringify(cloudSettings));
+              if (cloudSettings.uiTheme) {
+                document.documentElement.setAttribute('data-theme', cloudSettings.uiTheme);
+              }
             }
           }
 
@@ -500,28 +544,49 @@ export default function StudioOSHome() {
     // C. Cascade to linked Invoices
     setInvoices((prevInvoices) =>
       prevInvoices.map((inv) => {
-        const isLinked = inv.clientName.toLowerCase() === quote.clientName.toLowerCase();
+        const isLinked =
+          inv.quotationId === quote.id ||
+          inv.clientName.toLowerCase() === quote.clientName.toLowerCase();
         if (isLinked) {
           const newTotal = quote.totalPrice;
           const prevPaid = Math.max(0, inv.totalAmount - inv.balanceDue);
           const newBalance = Math.max(0, newTotal - prevPaid);
+
+          // Build synchronized line items from quote deliverables if available
+          const lineItems = (quote.deliverables && quote.deliverables.length > 0)
+            ? quote.deliverables.map((deliv, idx) => {
+                const count = quote.deliverables.length;
+                const baseItemPrice = Math.round(newTotal / count);
+                const isLast = idx === count - 1;
+                const price = isLast ? newTotal - baseItemPrice * (count - 1) : baseItemPrice;
+                return {
+                  id: `inv-item-${idx + 1}`,
+                  description: deliv.details ? `${deliv.item} — ${deliv.details}` : deliv.item,
+                  quantity: 1,
+                  unitPrice: price,
+                  total: price,
+                };
+              })
+            : [
+                {
+                  id: inv.items[0]?.id || 'item-1',
+                  description: `${quote.packageTitle} Coverage & High-Res Plates`,
+                  quantity: 1,
+                  unitPrice: newTotal,
+                  total: newTotal,
+                },
+              ];
+
           const updatedInvoice: Invoice = {
             ...inv,
+            quotationId: quote.id,
             clientName: quote.clientName,
             brand: quote.packageTitle,
             subtotal: newTotal,
             totalAmount: newTotal,
             balanceDue: newBalance,
             status: newBalance === 0 ? 'PAID' : prevPaid > 0 ? 'PARTIAL' : 'UNPAID',
-            items: [
-              {
-                id: inv.items[0]?.id || 'item-1',
-                description: `${quote.packageTitle} Coverage & High-Res Plates`,
-                quantity: 1,
-                unitPrice: newTotal,
-                total: newTotal,
-              },
-            ],
+            items: lineItems,
           };
           syncInvoiceToCloud(updatedInvoice);
           return updatedInvoice;
@@ -600,8 +665,8 @@ export default function StudioOSHome() {
       },
       productionTeam: [
         { role: 'Studio Director & Lead Camera', name: 'Dan Aurel', initials: 'DA' },
-        { role: 'First Camera Assistant', name: 'Roshan D’Silva', initials: 'RD' },
-        { role: 'Digital Imaging Technician (DIT)', name: 'Farooq Mansoor', initials: 'FM' },
+        { role: 'Cinematographer (4K Motion)', name: 'Reuben Serrao', initials: 'RS' },
+        { role: 'Grip & Lighting Assistant', name: 'Santhosh Bhandary', initials: 'SB' },
       ],
       shotListTotal: 25,
       shotListCompleted: 0,
@@ -612,15 +677,15 @@ export default function StudioOSHome() {
         currency: 'INR',
       },
       scheduleTimeline: [
-        { time: '05:30', activity: 'Grip & Tethering Setup', lead: 'Farooq Mansoor' },
-        { time: '06:30', activity: 'Traditional Draping & Kasavu Portraits', lead: 'Dan Aurel' },
+        { time: '05:30', activity: 'Grip & Lighting Equipment Setup', lead: 'Santhosh Bhandary' },
+        { time: '06:30', activity: 'Traditional Draping & Portraiture Master Plates', lead: 'Dan Aurel' },
         { time: '16:00', activity: 'Sunset Coastal & Drone Cinema Flight', lead: 'Dan Aurel' },
-        { time: '19:30', activity: 'Wrap & Dual NVMe RAW Ingest Verification', lead: 'Farooq Mansoor' },
+        { time: '19:30', activity: 'Wrap & Dual NVMe RAW Ingest Verification', lead: 'Reuben Serrao' },
       ],
       gearAllocated: [
-        'Hasselblad H6D-100c Medium Format',
-        'Phase One IQ4 150MP Achromatic Back',
-        'Profoto Pro-11 Studio Flash Generators',
+        'Sony FX3 + Sony A7R V Dual Body Rig',
+        'Sony GM 24-70mm f/2.8 & 85mm f/1.4 Primes',
+        'Godox AD400 Pro Wireless Strobes',
       ],
       editorialNotes: 'Converted from Quotation ' + quote.quotationNumber,
       quotationId: quote.id,
@@ -632,23 +697,40 @@ export default function StudioOSHome() {
     setBookings([newBooking, ...bookings]);
     syncBookingToCloud(newBooking);
 
+    const lineItems = (quote.deliverables && quote.deliverables.length > 0)
+      ? quote.deliverables.map((deliv, idx) => {
+          const count = quote.deliverables.length;
+          const baseItemPrice = Math.round(quote.totalPrice / count);
+          const isLast = idx === count - 1;
+          const price = isLast ? quote.totalPrice - baseItemPrice * (count - 1) : baseItemPrice;
+          return {
+            id: `inv-item-${idx + 1}`,
+            description: deliv.details ? `${deliv.item} — ${deliv.details}` : deliv.item,
+            quantity: 1,
+            unitPrice: price,
+            total: price,
+          };
+        })
+      : [
+          {
+            id: 'item-1',
+            description: `${quote.packageTitle} Coverage & Master Deliverables`,
+            quantity: 1,
+            unitPrice: quote.totalPrice,
+            total: quote.totalPrice,
+          },
+        ];
+
     const newInvoice: Invoice = {
       id: `inv-${Date.now()}`,
+      quotationId: quote.id,
       invoiceNumber: `INV-2026-0${Math.floor(100 + Math.random() * 899)}`,
       clientId: newBooking.client.id,
       clientName: quote.clientName,
       brand: quote.packageTitle,
       issueDate: new Date().toISOString().split('T')[0],
       dueDate: '2026-11-20',
-      items: [
-        {
-          id: 'item-1',
-          description: `${quote.packageTitle} Coverage & High-Res Plates`,
-          quantity: 1,
-          unitPrice: quote.totalPrice,
-          total: quote.totalPrice,
-        },
-      ],
+      items: lineItems,
       subtotal: quote.totalPrice,
       productionFeeTax: 0,
       totalAmount: quote.totalPrice,
@@ -1023,123 +1105,13 @@ export default function StudioOSHome() {
             />
           )}
 
-          {/* Access Control Overview Module (Admin Only) */}
-          {activeModule === 'access' && currentUser.role === 'ADMIN_DIRECTOR' && (
-            <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-8 animate-fadeIn">
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-bone-border dark:border-obsidian-border">
-                <div>
-                  <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.25em] text-bone-muted dark:text-obsidian-muted mb-1">
-                    <span>Security & Roles</span>
-                    <span>//</span>
-                    <span className="text-vermillion font-bold">Supabase RLS Matrix</span>
-                  </div>
-                  <h1 className="text-3xl md:text-5xl font-serif font-black tracking-tight uppercase">
-                    Access Control
-                  </h1>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setActiveModule('settings')}
-                    className="px-4 py-2.5 bg-carbon text-bone dark:bg-white dark:text-carbon text-xs font-mono uppercase tracking-widest font-bold hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all flex items-center gap-2"
-                  >
-                    <Users size={14} />
-                    <span>Manage User Accounts in Settings</span>
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="px-4 py-2.5 text-vermillion border border-vermillion/40 text-xs font-mono uppercase tracking-widest hover:bg-vermillion hover:text-white transition-all flex items-center gap-2 font-bold"
-                  >
-                    <LogOut size={14} />
-                    <span>Logout Session</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Active Identity Card */}
-              <div className="p-6 bg-bone-card dark:bg-obsidian-card border-2 border-carbon dark:border-white flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-vermillion font-bold">
-                    Currently Authenticated Identity
-                  </span>
-                  <h3 className="text-2xl font-serif font-bold uppercase">{currentUser.fullName}</h3>
-                  <p className="text-xs font-mono text-bone-muted dark:text-obsidian-muted">
-                    Username: <code className="text-carbon dark:text-white font-bold">@{currentUser.username}</code> | Assigned Role:{' '}
-                    <span className="font-bold uppercase text-carbon dark:text-white">{currentUser.role}</span>
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="px-3 py-1 bg-green-500/10 border border-green-500/30 text-green-600 dark:text-green-400 font-mono text-xs uppercase font-bold">
-                    Engine Session Active
-                  </span>
-                  <button
-                    onClick={handleLogout}
-                    className="px-3 py-1 bg-vermillion text-white text-xs font-mono uppercase tracking-widest font-bold flex items-center gap-1.5 hover:bg-black transition-colors"
-                  >
-                    <LogOut size={12} />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-6 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="font-serif text-xl font-bold uppercase">Director (Root Principal)</h2>
-                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 bg-vermillion text-white font-bold">
-                      Full Read / Write
-                    </span>
-                  </div>
-                  <p className="text-xs font-mono text-bone-muted dark:text-obsidian-muted">
-                    Full cryptographic control over dual general ledger, client billing, shoot pricing, and master call sheets.
-                  </p>
-                  <ul className="space-y-2 text-xs font-mono">
-                    <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                      <CheckCircle size={14} /> <span>General Ledger RLS bypass</span>
-                    </li>
-                    <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                      <CheckCircle size={14} /> <span>Create / Modify / Void Invoices & Quotes</span>
-                    </li>
-                    <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                      <CheckCircle size={14} /> <span>Add / Edit User Credentials & Permissions</span>
-                    </li>
-                  </ul>
-                  <div className="pt-2">
-                    <div className="w-full py-2 text-center text-xs font-mono uppercase tracking-widest border border-bone-border dark:border-obsidian-border bg-bone-surface dark:bg-obsidian-surface text-bone-muted dark:text-obsidian-muted">
-                      {currentUser.role === 'ADMIN_DIRECTOR' ? 'Active Authenticated Role' : 'Admin Credentials Required'}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="font-serif text-xl font-bold uppercase">Second Unit / Crew</h2>
-                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 bg-carbon/10 dark:bg-white/10 font-bold">
-                      Restricted Call Sheets
-                    </span>
-                  </div>
-                  <p className="text-xs font-mono text-bone-muted dark:text-obsidian-muted">
-                    Confined strictly to schedule timeline, call times, location coordinates, and equipment allocations. Financial ledgers remain obfuscated.
-                  </p>
-                  <ul className="space-y-2 text-xs font-mono">
-                    <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                      <CheckCircle size={14} /> <span>Read-only access to assigned call sheets</span>
-                    </li>
-                    <li className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                      <CheckCircle size={14} /> <span>Edit call sheet checklist & delivery notes</span>
-                    </li>
-                    <li className="flex items-center gap-2 text-vermillion">
-                      <Lock size={14} /> <span>Financial retainers & ledger hidden</span>
-                    </li>
-                  </ul>
-                  <div className="pt-2">
-                    <div className="w-full py-2 text-center text-xs font-mono uppercase tracking-widest border border-bone-border dark:border-obsidian-border bg-bone-surface dark:bg-obsidian-surface text-bone-muted dark:text-obsidian-muted">
-                      Assigned to Crew Unit
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* Catalog & Crew Production Directory Module */}
+          {activeModule === 'catalog' && (
+            <CatalogView
+              settings={studioSettings}
+              onUpdateSettings={handleUpdateSettings}
+              currentUser={currentUser}
+            />
           )}
 
           {/* Settings Module (Allows Admin to Add/Edit/Delete Users & Permissions) */}

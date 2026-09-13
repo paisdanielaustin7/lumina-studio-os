@@ -18,6 +18,7 @@ import {
   Sparkles,
   Camera,
   KeyRound,
+  Sliders,
   LogOut,
   X,
 } from 'lucide-react';
@@ -54,20 +55,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const allNavItems = [
     { id: 'overview' as ViewModule, label: 'Overview', icon: LayoutDashboard, badge: 'LIVE' },
     { id: 'quotations' as ViewModule, label: 'Quotations & Orders', icon: Sparkles, badge: currentUser.canEditQuotesAndOrders ? null : 'VIEW' },
-    { id: 'calendar' as ViewModule, label: 'Calendar / Call Sheets', icon: CalendarDays, badge: '4 SETS' },
+    { id: 'catalog' as ViewModule, label: 'Catalog & Crew', icon: Sliders, badge: 'CORE' },
+    { id: 'calendar' as ViewModule, label: 'Calendar / Call Sheets', icon: CalendarDays, badge: 'SETS' },
     { id: 'ledger' as ViewModule, label: 'Dual Ledger', icon: Scale, badge: currentUser.canViewFinances ? null : 'LOCK' },
     { id: 'billing' as ViewModule, label: 'Invoices & Retainers', icon: FileText, badge: null },
-    { id: 'access' as ViewModule, label: 'Access Control', icon: ShieldCheck, badge: 'ROOT' },
     { id: 'settings' as ViewModule, label: 'Studio Settings', icon: Settings, badge: currentUser.canAccessSettings ? null : 'VIEW' },
   ];
 
-  // Only Admin has Access Control section in the navigation
-  const navItems = allNavItems.filter((item) => {
-    if (item.id === 'access') {
-      return currentUser.role === 'ADMIN_DIRECTOR';
-    }
-    return true;
-  });
+  const navItems = allNavItems;
 
   return (
     <>

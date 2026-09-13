@@ -207,9 +207,7 @@ END $$;
 -- Seed Users (if not present)
 INSERT INTO public.lumina_users (id, username, password, full_name, role, can_view_finances, can_access_settings, can_edit_quotes_and_orders, can_edit_ledger)
 VALUES 
-  ('usr-admin', 'admin', 'adminoflumina123', 'Studio Director Dan Aurel', 'ADMIN_DIRECTOR', true, true, true, true),
-  ('usr-roshan', 'roshan', 'crewpass123', 'Roshan D’Silva (Lead 2nd Unit)', 'SECOND_SHOOTER', false, false, false, false),
-  ('usr-farooq', 'farooq', 'ditpass123', 'Farooq Mansoor (DIT & Colorist)', 'SECOND_SHOOTER', false, false, false, false)
+  ('usr-admin', 'admin', 'adminoflumina123', 'Studio Director Dan Aurel', 'ADMIN_DIRECTOR', true, true, true, true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Seed Studio Settings (if not present)
@@ -233,3 +231,7 @@ INSERT INTO public.lumina_settings (
 
 -- Safe migration for existing installations
 ALTER TABLE public.lumina_settings ADD COLUMN IF NOT EXISTS crew_roster JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.lumina_settings ADD COLUMN IF NOT EXISTS ui_theme TEXT DEFAULT 'slate';
+ALTER TABLE public.lumina_settings ADD COLUMN IF NOT EXISTS package_requirements JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.lumina_settings ADD COLUMN IF NOT EXISTS package_deliverables JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.lumina_invoices ADD COLUMN IF NOT EXISTS quotation_id TEXT;

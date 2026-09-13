@@ -32,37 +32,110 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   selectedShoot,
   onSelectShoot,
 }) => {
-  const [currentMonth, setCurrentMonth] = useState('September 2026');
+  const [currentYear, setCurrentYear] = useState(2026);
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(8); // 8 = September (0-indexed)
   const [activeFilter, setActiveFilter] = useState<string>('ALL');
 
-  // Days in September 2026: Sept 1 is Tuesday (so Monday starts Aug 31 or blank)
-  // Let's build a bespoke high-fashion grid of 35 days (5 weeks x 7 days)
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+  const monthShortNames = [
+    'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+  ];
+
+  const currentMonthLabel = `${monthNames[currentMonthIndex]} ${currentYear}`;
+  const currentMonthShortLabel = `${monthShortNames[currentMonthIndex]} '${String(currentYear).slice(-2)}`;
+
+  const handlePrevMonth = () => {
+    if (currentMonthIndex === 0) {
+      setCurrentMonthIndex(11);
+      setCurrentYear((y) => y - 1);
+    } else {
+      setCurrentMonthIndex((m) => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonthIndex === 11) {
+      setCurrentMonthIndex(0);
+      setCurrentYear((y) => y + 1);
+    } else {
+      setCurrentMonthIndex((m) => m + 1);
+    }
+  };
+
   const daysOfWeek = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
-  // Calendar cells for Sept 2026
-  // Sept 1, 2026 is Tuesday. So Day 1 has 1 offset day (Aug 31)
-  const calendarCells = [
-    { dayNumber: 31, isCurrentMonth: false, dateStr: '2026-08-31' },
-    ...Array.from({ length: 30 }, (_, i) => {
-      const d = i + 1;
-      const dayFormatted = d < 10 ? `0${d}` : `${d}`;
-      return {
-        dayNumber: d,
-        isCurrentMonth: true,
-        dateStr: `2026-09-${dayFormatted}`,
-      };
-    }),
-    { dayNumber: 1, isCurrentMonth: false, dateStr: '2026-10-01' },
-    { dayNumber: 2, isCurrentMonth: false, dateStr: '2026-10-02' },
-    { dayNumber: 3, isCurrentMonth: false, dateStr: '2026-10-03' },
-    { dayNumber: 4, isCurrentMonth: false, dateStr: '2026-10-04' },
-  ];
+  // Calculate dynamic calendar cells
+  const daysInMonth = new Date(currentYear, currentMonthIndex + 1, 0).getDate();
+  const prevMonthDays = new Date(currentYear, currentMonthIndex, 0).getDate();
+  const firstDayOfWeek = new Date(currentYear, currentMonthIndex, 1).getDay();
+  // Monday = 0, ..., Sunday = 6
+  const startOffset = (firstDayOfWeek + 6) % 7;
+
+  interface CalendarCell {
+    dayNumber: number;
+    isCurrentMonth: boolean;
+    dateStr: string;
+  }
+
+  const calendarCells: CalendarCell[] = [];
+
+  // Trailing previous month days
+  for (let i = startOffset - 1; i >= 0; i--) {
+    const day = prevMonthDays - i;
+    const prevM = currentMonthIndex === 0 ? 12 : currentMonthIndex;
+    const prevY = currentMonthIndex === 0 ? currentYear - 1 : currentYear;
+    const mStr = prevM < 10 ? `0${prevM}` : `${prevM}`;
+    const dStr = day < 10 ? `0${day}` : `${day}`;
+    calendarCells.push({
+      dayNumber: day,
+      isCurrentMonth: false,
+      dateStr: `${prevY}-${mStr}-${dStr}`,
+    });
+  }
+
+  // Current month days
+  for (let day = 1; day <= daysInMonth; day++) {
+    const mStr = currentMonthIndex + 1 < 10 ? `0${currentMonthIndex + 1}` : `${currentMonthIndex + 1}`;
+    const dStr = day < 10 ? `0${day}` : `${day}`;
+    calendarCells.push({
+      dayNumber: day,
+      isCurrentMonth: true,
+      dateStr: `${currentYear}-${mStr}-${dStr}`,
+    });
+  }
+
+  // Next month leading days to complete grid
+  const totalCellsNeeded = Math.ceil(calendarCells.length / 7) * 7;
+  const nextMonthCellsCount = Math.max(35, totalCellsNeeded) - calendarCells.length;
+  for (let day = 1; day <= nextMonthCellsCount; day++) {
+    const nextM = currentMonthIndex === 11 ? 1 : currentMonthIndex + 2;
+    const nextY = currentMonthIndex === 11 ? currentYear + 1 : currentYear;
+    const mStr = nextM < 10 ? `0${nextM}` : `${nextM}`;
+    const dStr = day < 10 ? `0${day}` : `${day}`;
+    calendarCells.push({
+      dayNumber: day,
+      isCurrentMonth: false,
+      dateStr: `${nextY}-${mStr}-${dStr}`,
+    });
+  }
 
   const getShootsForDate = (dateStr: string) => {
     return shoots.filter((s) => {
       const matchesDate = s.date === dateStr;
       if (!matchesDate) return false;
       if (activeFilter === 'ALL') return true;
+      if (activeFilter === 'WEDDING') {
+        return (
+          s.type === 'Wedding Cinemastory & Stills' ||
+          s.type === 'Royal Coastal Wedding' ||
+          s.type === 'Heritage Nikkah & Banquet' ||
+          s.type === 'Catholic Roce & Nuptials'
+        );
+      }
       return s.type === activeFilter;
     });
   };
@@ -101,7 +174,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             <span className="text-vermillion font-bold">Confirmed Call Sheets</span>
           </div>
           <h1 className="text-2xl sm:text-3xl md:text-5xl font-serif font-black tracking-tight text-carbon dark:text-white uppercase">
-            {currentMonth}
+            {currentMonthLabel}
           </h1>
         </div>
 
@@ -117,6 +190,16 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               }`}
             >
               All Sets
+            </button>
+            <button
+              onClick={() => setActiveFilter('WEDDING')}
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 uppercase tracking-wider transition-colors border-l border-bone-border dark:border-obsidian-border ${
+                activeFilter === 'WEDDING'
+                  ? 'bg-carbon text-bone dark:bg-white dark:text-carbon font-bold'
+                  : 'text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white'
+              }`}
+            >
+              Weddings
             </button>
             <button
               onClick={() => setActiveFilter('Haute Couture Editorial')}
@@ -142,17 +225,21 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
           <div className="flex items-center border border-bone-border dark:border-obsidian-border">
             <button
+              onClick={handlePrevMonth}
               className="p-1.5 sm:p-2 text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white hover:bg-bone-surface dark:hover:bg-obsidian-surface transition-colors"
               aria-label="Previous Month"
+              title="Previous Month"
             >
               <ChevronLeft size={16} />
             </button>
-            <span className="px-2.5 sm:px-3 text-[11px] sm:text-xs font-mono font-bold tracking-widest text-carbon dark:text-white">
-              SEP 26
+            <span className="px-2.5 sm:px-3 text-[11px] sm:text-xs font-mono font-bold tracking-widest text-carbon dark:text-white min-w-[75px] text-center select-none">
+              {currentMonthShortLabel}
             </span>
             <button
+              onClick={handleNextMonth}
               className="p-1.5 sm:p-2 text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white hover:bg-bone-surface dark:hover:bg-obsidian-surface transition-colors"
               aria-label="Next Month"
+              title="Next Month"
             >
               <ChevronRight size={16} />
             </button>

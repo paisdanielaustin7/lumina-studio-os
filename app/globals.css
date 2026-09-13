@@ -4,27 +4,157 @@
 
 @layer base {
   :root {
-    --bg-surface: #f9f9f8;
+    --bg-surface: #fbfbfa;
     --text-primary: #0d0d0d;
-    --text-muted: #71717a;
-    --border-color: #e3e3df;
-    --border-subtle: #eaeaea;
+    --text-muted: #686763;
+    --border-color: #e2e0d8;
+    --border-subtle: #eae8e1;
     --card-bg: #ffffff;
-    --card-hover: #f3f3f0;
+    --card-hover: #f5f4f0;
     --accent: #eb3829;
     --grain-opacity: 0.035;
+
+    /* Atelier Slate & Warm Alabaster (Default) */
+    --bone-default: #fbfbfa;
+    --bone-surface: #f4f3ef;
+    --bone-card: #ffffff;
+    --bone-border: #e2e0d8;
+    --bone-muted: #686763;
+    --bone-elevated: #eceae3;
+
+    --obsidian-default: #0b0d0e;
+    --obsidian-surface: #131618;
+    --obsidian-card: #181c1f;
+    --obsidian-border: #282e34;
+    --obsidian-muted: #86919a;
+    --obsidian-elevated: #1c2227;
   }
 
   .dark {
-    --bg-surface: #0a0a0a;
+    --bg-surface: #0b0d0e;
     --text-primary: #f4f4f2;
-    --text-muted: #808080;
-    --border-color: #242424;
-    --border-subtle: #191919;
-    --card-bg: #121212;
-    --card-hover: #181818;
+    --text-muted: #86919a;
+    --border-color: #282e34;
+    --border-subtle: #1e2328;
+    --card-bg: #181c1f;
+    --card-hover: #1f2429;
     --accent: #eb3829;
     --grain-opacity: 0.055;
+  }
+
+  /* Theme 1: Atelier Slate & Warm Alabaster (New Default) */
+  [data-theme="slate"] {
+    --bg-surface: #fbfbfa;
+    --bone-default: #fbfbfa;
+    --bone-surface: #f4f3ef;
+    --bone-card: #ffffff;
+    --bone-border: #e2e0d8;
+    --bone-muted: #686763;
+    --bone-elevated: #eceae3;
+    --obsidian-default: #0b0d0e;
+    --obsidian-surface: #131618;
+    --obsidian-card: #181c1f;
+    --obsidian-border: #282e34;
+    --obsidian-muted: #86919a;
+    --obsidian-elevated: #1c2227;
+    --border-color: #e2e0d8;
+  }
+  .dark[data-theme="slate"], [data-theme="slate"] .dark, .dark [data-theme="slate"] {
+    --bg-surface: #0b0d0e;
+    --border-color: #282e34;
+    --card-bg: #181c1f;
+  }
+
+  /* Theme 2: Classic Obsidian & Bone Ivory */
+  [data-theme="obsidian"] {
+    --bg-surface: #f9f9f8;
+    --bone-default: #f9f9f8;
+    --bone-surface: #f2f2f0;
+    --bone-card: #ffffff;
+    --bone-border: #e3e3df;
+    --bone-muted: #6e6e73;
+    --bone-elevated: #ecece8;
+    --obsidian-default: #0a0a0a;
+    --obsidian-surface: #111111;
+    --obsidian-card: #161616;
+    --obsidian-border: #262626;
+    --obsidian-muted: #808080;
+    --obsidian-elevated: #1c1c1c;
+    --border-color: #e3e3df;
+  }
+  .dark[data-theme="obsidian"], [data-theme="obsidian"] .dark, .dark [data-theme="obsidian"] {
+    --bg-surface: #0a0a0a;
+    --border-color: #262626;
+    --card-bg: #161616;
+  }
+
+  /* Theme 3: Nordic Sage & Chalk Minimal */
+  [data-theme="sage"] {
+    --bg-surface: #f6f8f6;
+    --bone-default: #f6f8f6;
+    --bone-surface: #eef2ee;
+    --bone-card: #ffffff;
+    --bone-border: #d8ded8;
+    --bone-muted: #5a685e;
+    --bone-elevated: #e4ebe4;
+    --obsidian-default: #0a0e0c;
+    --obsidian-surface: #111814;
+    --obsidian-card: #16201b;
+    --obsidian-border: #25342c;
+    --obsidian-muted: #7d9185;
+    --obsidian-elevated: #1b2620;
+    --border-color: #d8ded8;
+  }
+  .dark[data-theme="sage"], [data-theme="sage"] .dark, .dark [data-theme="sage"] {
+    --bg-surface: #0a0e0c;
+    --border-color: #25342c;
+    --card-bg: #16201b;
+  }
+
+  /* Theme 4: Mocha Noir & Cashmere Sand */
+  [data-theme="mocha"] {
+    --bg-surface: #f8f6f2;
+    --bone-default: #f8f6f2;
+    --bone-surface: #f0ebe4;
+    --bone-card: #ffffff;
+    --bone-border: #ded6cb;
+    --bone-muted: #73685e;
+    --bone-elevated: #e8e0d5;
+    --obsidian-default: #0e0c0b;
+    --obsidian-surface: #181412;
+    --obsidian-card: #201b18;
+    --obsidian-border: #332c27;
+    --obsidian-muted: #9a8b80;
+    --obsidian-elevated: #26211d;
+    --border-color: #ded6cb;
+  }
+  .dark[data-theme="mocha"], [data-theme="mocha"] .dark, .dark [data-theme="mocha"] {
+    --bg-surface: #0e0c0b;
+    --border-color: #332c27;
+    --card-bg: #201b18;
+  }
+
+  /* Theme 5: Midnight Cobalt & Ice Titanium */
+  [data-theme="cobalt"] {
+    --bg-surface: #f5f7fa;
+    --bone-default: #f5f7fa;
+    --bone-surface: #edf0f5;
+    --bone-card: #ffffff;
+    --bone-border: #d7dce5;
+    --bone-muted: #586375;
+    --bone-elevated: #e2e7f0;
+    --obsidian-default: #080b11;
+    --obsidian-surface: #0f141f;
+    --obsidian-card: #141a29;
+    --obsidian-border: #212c44;
+    --obsidian-muted: #7b8ba6;
+    --obsidian-elevated: #182032;
+    --border-color: #d7dce5;
+  }
+  .dark[data-theme="cobalt"], [data-theme="cobalt"] .dark, .dark [data-theme="cobalt"] {
+    --bg-surface: #080b11;
+    --border-color: #212c44;
+    --card-bg: #141a29;
   }
 
   body {

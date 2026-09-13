@@ -131,6 +131,7 @@ export interface Invoice {
   totalAmount: number;
   balanceDue: number;
   status: 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE';
+  quotationId?: string;
 }
 
 export interface KPISummary {
@@ -238,14 +239,16 @@ export interface Enquiry {
   createdAt: string;
 }
 
+export type SiteColorTheme = 'slate' | 'obsidian' | 'sage' | 'mocha' | 'cobalt';
+
 export type ViewModule = 
   | 'overview' 
   | 'quotations' 
   | 'calendar' 
   | 'billing' 
   | 'ledger' 
-  | 'settings' 
-  | 'access';
+  | 'catalog'
+  | 'settings';
 
 export type UserRole = 'ADMIN_DIRECTOR' | 'SECOND_SHOOTER' | 'PRODUCER';
 
@@ -282,6 +285,9 @@ export interface StudioSettings {
   pdfThemeColor: PDFThemeColor;
   customPalettes?: CustomThemePalette[];
   crewRoster?: CrewTemplateItem[];
+  uiTheme?: SiteColorTheme;
+  packageRequirements?: QuotationItem[];
+  packageDeliverables?: DeliverableItem[];
 }
 
 export interface UserAccount {

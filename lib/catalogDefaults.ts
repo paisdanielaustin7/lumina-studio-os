@@ -126,6 +126,9 @@ export const defaultStudioSettings: StudioSettings = {
   termsAndConditions: defaultCatalog.standardTerms,
   pdfThemeColor: 'sage',
   crewRoster: defaultCrewRoster,
+  uiTheme: 'slate',
+  packageRequirements: defaultCatalog.standardRequirements,
+  packageDeliverables: defaultCatalog.standardDeliverables,
 };
 
 export const defaultUsers: UserAccount[] = [
@@ -139,27 +142,5 @@ export const defaultUsers: UserAccount[] = [
     canAccessSettings: true,
     canEditQuotesAndOrders: true,
     canEditLedger: true,
-  },
-  {
-    id: 'usr-roshan',
-    username: 'roshan',
-    password: 'crewpass123',
-    fullName: 'Roshan D’Silva (Lead 2nd Unit)',
-    role: 'SECOND_SHOOTER',
-    canViewFinances: false, // hidden finances
-    canAccessSettings: false, // restricted settings
-    canEditQuotesAndOrders: false, // restricted from editing finalized quotes
-    canEditLedger: false,
-  },
-  {
-    id: 'usr-farooq',
-    username: 'farooq',
-    password: 'ditpass123',
-    fullName: 'Farooq Mansoor (DIT & Colorist)',
-    role: 'SECOND_SHOOTER',
-    canViewFinances: false,
-    canAccessSettings: false,
-    canEditQuotesAndOrders: false,
-    canEditLedger: false,
   },
 ];
