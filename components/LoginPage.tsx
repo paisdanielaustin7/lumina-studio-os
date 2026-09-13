@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { UserAccount } from '@/types';
 import Link from 'next/link';
+import { isSupabaseConfigured } from '@/lib/supabaseClient';
+import { fetchUsersFromCloud } from '@/lib/supabaseService';
 
 interface LoginPageProps {
   users: UserAccount[];
@@ -52,27 +54,43 @@ export const LoginPage: React.FC<LoginPageProps> = ({ users, onLoginSuccess }) =
     return () => clearInterval(interval);
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
-    setTimeout(() => {
-      const foundUser = users.find(
-        (u) =>
-          u.username.trim().toLowerCase() === username.trim().toLowerCase() &&
-          u.password === password
-      );
+    const cleanUsername = username.trim().toLowerCase();
 
-      if (foundUser) {
-        setIsLoading(false);
-        onLoginSuccess(foundUser);
-      } else {
-        setIsLoading(false);
-        setFailedAttempts((prev) => prev + 1);
-        setError('Authentication denied. Invalid studio username or password.');
+    // 1. Check in currently passed users array
+    let foundUser = users.find(
+      (u) =>
+        u.username.trim().toLowerCase() === cleanUsername &&
+        u.password === password
+    );
+
+    // 2. If not found in current memory state, query live Supabase cloud directly
+    if (!foundUser && isSupabaseConfigured()) {
+      try {
+        const cloudUsers = await fetchUsersFromCloud();
+        if (cloudUsers) {
+          foundUser = cloudUsers.find(
+            (u) =>
+              u.username.trim().toLowerCase() === cleanUsername &&
+              u.password === password
+          );
+        }
+      } catch (err) {
+        console.warn('[LoginPage] Cloud user fallback check error:', err);
       }
-    }, 350);
+    }
+
+    setIsLoading(false);
+    if (foundUser) {
+      onLoginSuccess(foundUser);
+    } else {
+      setFailedAttempts((prev) => prev + 1);
+      setError('Authentication denied. Invalid studio username or password.');
+    }
   };
 
   return (

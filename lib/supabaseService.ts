@@ -243,17 +243,23 @@ export async function fetchInvoicesFromCloud(): Promise<Invoice[] | null> {
 export async function syncUserToCloud(user: UserAccount): Promise<void> {
   if (!supabase || !isSupabaseConfigured()) return;
   try {
-    await supabase.from('lumina_users').upsert({
-      id: user.id,
-      username: user.username,
-      password: user.password,
-      full_name: user.fullName,
-      role: user.role,
-      can_view_finances: user.canViewFinances,
-      can_access_settings: user.canAccessSettings,
-      can_edit_quotes_and_orders: user.canEditQuotesAndOrders,
-      can_edit_ledger: user.canEditLedger,
-    });
+    const { error } = await supabase.from('lumina_users').upsert(
+      {
+        id: user.id,
+        username: user.username.trim().toLowerCase(),
+        password: user.password,
+        full_name: user.fullName,
+        role: user.role,
+        can_view_finances: user.canViewFinances,
+        can_access_settings: user.canAccessSettings,
+        can_edit_quotes_and_orders: user.canEditQuotesAndOrders,
+        can_edit_ledger: user.canEditLedger,
+      },
+      { onConflict: 'username' }
+    );
+    if (error) {
+      console.error('[Supabase] syncUserToCloud error:', error);
+    }
   } catch (e) {
     console.error('[Supabase] syncUserToCloud error:', e);
   }

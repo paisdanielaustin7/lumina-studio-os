@@ -146,13 +146,16 @@ export default function StudioOSHome() {
       }
     }
 
-    setIsAuthChecking(false);
-
     // If Supabase credentials are configured, connect to Cloud and listen to Realtime
     let unsubscribeRealtime: (() => void) | null = null;
 
     if (isSupabaseConfigured()) {
       setIsCloudConnected(true);
+
+      // Fallback timeout to ensure screen is never frozen
+      const authTimeout = setTimeout(() => {
+        setIsAuthChecking(false);
+      }, 1500);
 
       const loadCloudData = async () => {
         try {
@@ -176,10 +179,36 @@ export default function StudioOSHome() {
 
           let effectiveUsers = activeUsersList;
           if (cloudUsers && cloudUsers.length > 0) {
-            effectiveUsers = cloudUsers;
-            setUsers(cloudUsers);
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('lumina_users', JSON.stringify(cloudUsers));
+            // Auto-merge: check if this device has any local users created prior to Supabase connection
+            const cloudUsernames = new Set(cloudUsers.map((u) => u.username.toLowerCase()));
+            const localOnlyUsers = activeUsersList.filter(
+              (u) => !cloudUsernames.has(u.username.toLowerCase())
+            );
+
+            if (localOnlyUsers.length > 0) {
+              console.log('[Supabase] Auto-syncing pre-existing local users to cloud:', localOnlyUsers);
+              for (const lu of localOnlyUsers) {
+                await syncUserToCloud(lu);
+              }
+              const reloadedUsers = await fetchUsersFromCloud();
+              if (reloadedUsers && reloadedUsers.length > 0) {
+                effectiveUsers = reloadedUsers;
+                setUsers(reloadedUsers);
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('lumina_users', JSON.stringify(reloadedUsers));
+                }
+              }
+            } else {
+              effectiveUsers = cloudUsers;
+              setUsers(cloudUsers);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('lumina_users', JSON.stringify(cloudUsers));
+              }
+            }
+          } else if (activeUsersList && activeUsersList.length > 0) {
+            // Cloud has 0 users, upload all active users to cloud
+            for (const u of activeUsersList) {
+              await syncUserToCloud(u);
             }
           }
 
@@ -229,6 +258,9 @@ export default function StudioOSHome() {
           }
         } catch (err) {
           console.warn('[Supabase] Initial cloud load error, falling back to local storage:', err);
+        } finally {
+          clearTimeout(authTimeout);
+          setIsAuthChecking(false);
         }
       };
 
