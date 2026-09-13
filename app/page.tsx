@@ -763,27 +763,27 @@ export default function StudioOSHome() {
               <Menu size={18} />
             </button>
 
-            <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400 font-bold text-[10px] sm:text-[11px]">
+            <span className="flex items-center gap-1.5 text-green-600 dark:text-green-400 font-bold text-[10px] sm:text-[11px] shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping" />
-              <span className="hidden xs:inline">ENGINE</span> ONLINE
+              <span>ENGINE ONLINE</span>
             </span>
 
-            {/* Supabase Cloud Realtime Sync Status Badge */}
+            {/* Supabase Cloud Realtime Sync Status Badge (Always visible on all screen sizes) */}
             {isCloudConnected ? (
               <span
-                className="hidden xs:flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] border border-emerald-500/30 px-2 py-0.5 bg-emerald-500/10 tracking-wider"
+                className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] border border-emerald-500/30 px-2 py-0.5 bg-emerald-500/10 tracking-wider shrink-0"
                 title="Supabase real-time cloud synchronization active across all devices"
               >
-                <Cloud size={11} className="text-emerald-500" />
+                <Cloud size={11} className="text-emerald-500 shrink-0" />
                 <span className="hidden sm:inline">CLOUD SYNC LIVE</span>
                 <span className="sm:hidden">CLOUD</span>
               </span>
             ) : (
               <span
-                className="hidden xs:flex items-center gap-1.5 text-bone-muted dark:text-obsidian-muted text-[10px] border border-bone-border dark:border-obsidian-border px-2 py-0.5 bg-bone-card/50 dark:bg-obsidian-card/50 tracking-wider"
+                className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold text-[10px] border border-amber-500/30 px-2 py-0.5 bg-amber-500/10 tracking-wider shrink-0"
                 title="Running in local storage fallback mode. Add Supabase keys to .env.local for multi-device sync."
               >
-                <CloudOff size={11} className="text-amber-500/80" />
+                <CloudOff size={11} className="text-amber-500 shrink-0" />
                 <span className="hidden sm:inline">LOCAL STORAGE</span>
                 <span className="sm:hidden">LOCAL</span>
               </span>
