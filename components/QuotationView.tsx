@@ -27,6 +27,8 @@ import {
   ArrowUpRight,
   Search,
   Lock,
+  X,
+  Users,
 } from 'lucide-react';
 import {
   Quotation,
@@ -126,7 +128,23 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
   const [qAdvancePct, setQAdvancePct] = useState(50);
   const [qRequirements, setQRequirements] = useState<QuotationItem[]>(catalog.standardRequirements);
   const [qDeliverables, setQDeliverables] = useState<DeliverableItem[]>(catalog.standardDeliverables);
-  const [qCrew, setQCrew] = useState<CrewRequirement[]>(catalog.standardCrew);
+
+  // Helper to resolve initial crew allocation from studio settings or default catalog
+  const getCrewFromSettings = (): CrewRequirement[] => {
+    if (settings.crewRoster && settings.crewRoster.length > 0) {
+      return settings.crewRoster.map((c) => ({
+        id: c.id,
+        role: c.role,
+        number: c.defaultCount,
+        assignedTo: c.defaultName,
+      }));
+    }
+    return catalog.standardCrew;
+  };
+
+  const [qCrew, setQCrew] = useState<CrewRequirement[]>(getCrewFromSettings);
+  const [selectedRosterRoleToAdd, setSelectedRosterRoleToAdd] = useState('');
+  const [customCrewRoleInput, setCustomCrewRoleInput] = useState('');
 
   // Manual Payment Entry Modal State
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -203,7 +221,7 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
     setQPackageTitle(enquiry.eventType.toUpperCase().includes('WEDDING') ? 'WEDDING PACKAGE' : 'PACKAGE');
     setQRequirements(catalog.standardRequirements);
     setQDeliverables(catalog.standardDeliverables);
-    setQCrew(catalog.standardCrew);
+    setQCrew(getCrewFromSettings());
     setShowQuoteModal(true);
   };
 
@@ -355,7 +373,7 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
               setQTotalPrice('38000');
               setQRequirements(catalog.standardRequirements);
               setQDeliverables(catalog.standardDeliverables);
-              setQCrew(catalog.standardCrew);
+              setQCrew(getCrewFromSettings());
               setShowQuoteModal(true);
             }}
             className={`px-3.5 py-1.5 uppercase font-bold tracking-wider flex items-center gap-1.5 transition-all ${
@@ -583,8 +601,15 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
               </div>
               <div className="border-x border-b border-[#d8e2dc] divide-y divide-[#e4ede7] text-[11px] font-mono bg-white/70">
                 {selectedQuote.crewAllocation.map((crew) => (
-                  <div key={crew.id} className="px-3.5 py-1.5 flex justify-between">
-                    <span>{crew.role}</span>
+                  <div key={crew.id} className="px-3.5 py-1.5 flex justify-between items-center">
+                    <div>
+                      <span>{crew.role}</span>
+                      {crew.assignedTo && (
+                        <span className="text-[9.5px] text-[#5a6962] ml-2 italic">
+                          ({crew.assignedTo})
+                        </span>
+                      )}
+                    </div>
                     <span className="font-bold">{crew.number}</span>
                   </div>
                 ))}
@@ -1328,28 +1353,152 @@ export const QuotationView: React.FC<QuotationViewProps> = ({
                 </div>
               </div>
 
-              {/* Crew Numbers */}
-              <div className="space-y-1.5">
-                <span className="font-bold uppercase text-[10px] block">Crew Numbers:</span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {/* Dynamic Crew Allocation Editor */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold uppercase text-[10px] block">
+                    Crew Allocation ({qCrew.length} Assigned):
+                  </span>
+                  <span className="text-[9px] text-bone-muted italic">
+                    Add or remove roles for this quotation
+                  </span>
+                </div>
+
+                {/* Current Quote Crew Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                   {qCrew.map((crew) => (
                     <div
                       key={crew.id}
-                      className="p-1.5 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border"
+                      className="p-2 bg-bone-surface dark:bg-obsidian-surface border border-bone-border dark:border-obsidian-border flex items-center justify-between gap-2"
                     >
-                      <span className="text-[9px] text-bone-muted uppercase block">{crew.role}</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={crew.number}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value) || 1;
-                          setQCrew(qCrew.map((c) => (c.id === crew.id ? { ...c, number: val } : c)));
-                        }}
-                        className="w-full bg-transparent font-bold text-xs text-carbon dark:text-white outline-none"
-                      />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[9.5px] font-bold text-carbon dark:text-white uppercase block truncate">
+                          {crew.role}
+                        </span>
+                        {crew.assignedTo && (
+                          <span className="text-[8.5px] text-bone-muted block truncate">
+                            {crew.assignedTo}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center border border-bone-border dark:border-obsidian-border bg-bone-card dark:bg-obsidian-card px-1.5 py-0.5">
+                          <span className="text-[8.5px] text-bone-muted mr-1">Qty:</span>
+                          <input
+                            type="number"
+                            min="1"
+                            max="10"
+                            value={crew.number}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value) || 1;
+                              setQCrew(qCrew.map((c) => (c.id === crew.id ? { ...c, number: val } : c)));
+                            }}
+                            className="w-7 bg-transparent font-bold text-xs text-carbon dark:text-white outline-none text-center"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setQCrew(qCrew.filter((c) => c.id !== crew.id))}
+                          className="p-1 text-bone-muted hover:text-vermillion transition-colors rounded hover:bg-carbon/5 dark:hover:bg-white/5"
+                          title="Remove crew role from quotation"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
                     </div>
                   ))}
+
+                  {qCrew.length === 0 && (
+                    <div className="col-span-full p-3 border border-dashed border-bone-border dark:border-obsidian-border text-center text-[10px] text-bone-muted">
+                      No crew allocated to this quotation yet. Select a role below to add.
+                    </div>
+                  )}
+                </div>
+
+                {/* Add Crew Role Selector */}
+                <div className="p-2 bg-bone-surface/60 dark:bg-obsidian-surface/60 border border-dashed border-bone-border dark:border-obsidian-border flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                  <div className="flex-1 flex gap-2">
+                    <select
+                      value={selectedRosterRoleToAdd}
+                      onChange={(e) => setSelectedRosterRoleToAdd(e.target.value)}
+                      className="flex-1 p-1.5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border text-carbon dark:text-white text-[11px] font-mono outline-none"
+                    >
+                      <option value="">-- Select Crew Role from Settings Roster --</option>
+                      {(settings.crewRoster || []).map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.role} {r.defaultName ? `(${r.defaultName})` : ''} - Def: {r.defaultCount}
+                        </option>
+                      ))}
+                      <option value="__custom__">+ Custom Crew Role...</option>
+                    </select>
+
+                    {selectedRosterRoleToAdd === '__custom__' && (
+                      <input
+                        type="text"
+                        placeholder="Enter custom role title..."
+                        value={customCrewRoleInput}
+                        onChange={(e) => setCustomCrewRoleInput(e.target.value)}
+                        className="flex-1 p-1.5 bg-bone-card dark:bg-obsidian-card border border-bone-border dark:border-obsidian-border text-carbon dark:text-white text-[11px] font-mono outline-none"
+                      />
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={
+                      !selectedRosterRoleToAdd ||
+                      (selectedRosterRoleToAdd === '__custom__' && !customCrewRoleInput.trim())
+                    }
+                    onClick={() => {
+                      let roleName = '';
+                      let assigned: string | undefined = undefined;
+                      let count = 1;
+
+                      if (selectedRosterRoleToAdd === '__custom__') {
+                        roleName = customCrewRoleInput.trim();
+                      } else {
+                        const matched = (settings.crewRoster || []).find(
+                          (r) => r.id === selectedRosterRoleToAdd
+                        );
+                        if (matched) {
+                          roleName = matched.role;
+                          assigned = matched.defaultName;
+                          count = matched.defaultCount;
+                        } else {
+                          roleName = selectedRosterRoleToAdd;
+                        }
+                      }
+
+                      if (!roleName) return;
+
+                      // Check if already in qCrew
+                      const existingIndex = qCrew.findIndex((c) => c.role.toLowerCase() === roleName.toLowerCase());
+                      if (existingIndex >= 0) {
+                        // Increment count
+                        setQCrew(
+                          qCrew.map((c, i) => (i === existingIndex ? { ...c, number: c.number + 1 } : c))
+                        );
+                      } else {
+                        setQCrew([
+                          ...qCrew,
+                          {
+                            id: `qcrew-${Date.now()}`,
+                            role: roleName,
+                            number: count,
+                            assignedTo: assigned,
+                          },
+                        ]);
+                      }
+
+                      setSelectedRosterRoleToAdd('');
+                      setCustomCrewRoleInput('');
+                    }}
+                    className="px-3 py-1.5 bg-carbon text-bone dark:bg-white dark:text-carbon hover:bg-vermillion dark:hover:bg-vermillion dark:hover:text-white transition-all text-[10px] uppercase font-bold tracking-wider disabled:opacity-40 flex items-center justify-center gap-1 shrink-0"
+                  >
+                    <Plus size={12} />
+                    <span>Add Role</span>
+                  </button>
                 </div>
               </div>
 

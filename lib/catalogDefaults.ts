@@ -97,6 +97,16 @@ export const defaultCatalog: CatalogTemplate = {
   defaultContactPhone: '+91 9380057445',
 };
 
+export const defaultCrewRoster = [
+  { id: 'crw-01', role: 'Lead Candid Photographer', defaultCount: 1, defaultName: 'Dan Aurel', phone: '+91 93800 57445' },
+  { id: 'crw-02', role: 'Traditional Photographer', defaultCount: 1, defaultName: 'Roshan D’Silva', phone: '+91 98450 11234' },
+  { id: 'crw-03', role: 'Cinematographer (4K Motion)', defaultCount: 1, defaultName: 'Reuben Serrao', phone: '+91 97412 88401' },
+  { id: 'crw-04', role: 'Traditional Videographer', defaultCount: 1, defaultName: 'Karthik Rao', phone: '+91 99001 44520' },
+  { id: 'crw-05', role: 'Drone Pilot (Aerial Cinema)', defaultCount: 1, defaultName: 'Farooq Mansoor', phone: '+91 96110 33912' },
+  { id: 'crw-06', role: 'DIT & Colorist (Live Ingest)', defaultCount: 1, defaultName: 'Farooq Mansoor', phone: '+91 96110 33912' },
+  { id: 'crw-07', role: 'Grip & Lighting Assistant', defaultCount: 1, defaultName: 'Santhosh Bhandary', phone: '+91 98440 77123' },
+];
+
 export const defaultStudioSettings: StudioSettings = {
   studioName: 'LUMINA',
   tagline: 'Wedding Cinemastory & Stills // Mangalore',
@@ -115,6 +125,7 @@ export const defaultStudioSettings: StudioSettings = {
   contactPhone: '+91 9380057445',
   termsAndConditions: defaultCatalog.standardTerms,
   pdfThemeColor: 'sage',
+  crewRoster: defaultCrewRoster,
 };
 
 export const defaultUsers: UserAccount[] = [

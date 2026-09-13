@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS public.lumina_settings (
   terms_and_conditions JSONB NOT NULL,
   pdf_theme_color TEXT DEFAULT 'sage',
   custom_palettes JSONB DEFAULT '[]'::jsonb,
+  crew_roster JSONB DEFAULT '[]'::jsonb,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now())
 );
 
@@ -213,7 +214,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Seed Studio Settings (if not present)
 INSERT INTO public.lumina_settings (
-  id, studio_name, tagline, city, has_gst, gstin, banking_details, contact_person, contact_phone, terms_and_conditions, pdf_theme_color, custom_palettes
+  id, studio_name, tagline, city, has_gst, gstin, banking_details, contact_person, contact_phone, terms_and_conditions, pdf_theme_color, custom_palettes, crew_roster
 ) VALUES (
   'studio_settings',
   'LUMINA',
@@ -226,5 +227,9 @@ INSERT INTO public.lumina_settings (
   '+91 9380057445',
   '["A 50% advance is required to confirm the booking. Dates are secured only after payment.", "Remaining balance must be cleared on or before the event date.", "Advance is non-refundable. Date changes are subject to availability.", "Final photos/videos will be delivered within 2-6 weeks.", "Travel And Accommodation Need To be Provided If Requested.", "Accommodation is not included in the above quotation and has to be provided by the client.", "We reserve the right to use content for portfolio and promotional purposes.", "In case of unforeseen issues, liability is limited to the amount paid.", "Delays from the client side may impact coverage. We are not responsible for reduced deliverables due to time loss.", "Additional Photos For Album Or Sheets Will Be Charged Additional.", "Photo Selection for the album done by the Client.", "Couple needs to provide a Hard Drive for the collection of RAW data, agency will not be liable for anykind of DATA LOSS after 6 months from the shoot date."]'::jsonb,
   'sage',
-  '[]'::jsonb
+  '[]'::jsonb,
+  '[{"id": "crw-01", "role": "Lead Candid Photographer", "defaultCount": 1, "defaultName": "Dan Aurel", "phone": "+91 93800 57445"}, {"id": "crw-02", "role": "Traditional Photographer", "defaultCount": 1, "defaultName": "Roshan D’Silva", "phone": "+91 98450 11234"}, {"id": "crw-03", "role": "Cinematographer (4K Motion)", "defaultCount": 1, "defaultName": "Reuben Serrao", "phone": "+91 97412 88401"}, {"id": "crw-04", "role": "Traditional Videographer", "defaultCount": 1, "defaultName": "Karthik Rao", "phone": "+91 99001 44520"}, {"id": "crw-05", "role": "Drone Pilot (Aerial Cinema)", "defaultCount": 1, "defaultName": "Farooq Mansoor", "phone": "+91 96110 33912"}, {"id": "crw-06", "role": "DIT & Colorist (Live Ingest)", "defaultCount": 1, "defaultName": "Farooq Mansoor", "phone": "+91 96110 33912"}, {"id": "crw-07", "role": "Grip & Lighting Assistant", "defaultCount": 1, "defaultName": "Santhosh Bhandary", "phone": "+91 98440 77123"}]'::jsonb
 ) ON CONFLICT (id) DO NOTHING;
+
+-- Safe migration for existing installations
+ALTER TABLE public.lumina_settings ADD COLUMN IF NOT EXISTS crew_roster JSONB DEFAULT '[]'::jsonb;

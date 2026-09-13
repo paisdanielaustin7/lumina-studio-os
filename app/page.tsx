@@ -72,6 +72,7 @@ import {
   deleteUserFromCloud,
   syncSettingsToCloud,
   seedCloudIfEmpty,
+  reseedCloudData,
   subscribeToLuminaRealtime,
 } from '@/lib/supabaseService';
 
@@ -386,6 +387,36 @@ export default function StudioOSHome() {
       localStorage.setItem('lumina_settings', JSON.stringify(newSettings));
     }
     syncSettingsToCloud(newSettings);
+  };
+
+  const handleResetSampleData = async () => {
+    setQuotations(mockQuotations);
+    setEnquiries(mockEnquiries);
+    setBookings(mockShoots);
+    setLedger(mockLedger);
+    setInvoices(mockInvoices);
+    setStudioSettings(defaultStudioSettings);
+    setKpi(mockKPISummary);
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('lumina_quotations', JSON.stringify(mockQuotations));
+      localStorage.setItem('lumina_enquiries', JSON.stringify(mockEnquiries));
+      localStorage.setItem('lumina_bookings', JSON.stringify(mockShoots));
+      localStorage.setItem('lumina_ledger', JSON.stringify(mockLedger));
+      localStorage.setItem('lumina_invoices', JSON.stringify(mockInvoices));
+      localStorage.setItem('lumina_settings', JSON.stringify(defaultStudioSettings));
+    }
+
+    if (isSupabaseConfigured()) {
+      await reseedCloudData({
+        settings: defaultStudioSettings,
+        quotations: mockQuotations,
+        enquiries: mockEnquiries,
+        bookings: mockShoots,
+        ledger: mockLedger,
+        invoices: mockInvoices,
+      });
+    }
   };
 
   const handleLoginSuccess = (user: UserAccount) => {
@@ -1120,6 +1151,7 @@ export default function StudioOSHome() {
               currentUser={currentUser}
               onUpdateUsers={handleUpdateUsers}
               onOpenLoginModal={() => setIsLoginModalOpen(true)}
+              onResetSampleData={handleResetSampleData}
             />
           )}
         </div>

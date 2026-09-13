@@ -60,6 +60,7 @@ export async function fetchSettingsFromCloud(): Promise<StudioSettings | null> {
       termsAndConditions: data.terms_and_conditions,
       pdfThemeColor: data.pdf_theme_color,
       customPalettes: data.custom_palettes || [],
+      crewRoster: data.crew_roster || undefined,
     };
   } catch (err) {
     console.warn('[Supabase] Failed to fetch settings:', err);
@@ -277,7 +278,7 @@ export async function deleteUserFromCloud(userId: string): Promise<void> {
 export async function syncSettingsToCloud(settings: StudioSettings): Promise<void> {
   if (!supabase || !isSupabaseConfigured()) return;
   try {
-    await supabase.from('lumina_settings').upsert({
+    const payload: any = {
       id: 'studio_settings',
       studio_name: settings.studioName,
       tagline: settings.tagline,
@@ -290,8 +291,15 @@ export async function syncSettingsToCloud(settings: StudioSettings): Promise<voi
       terms_and_conditions: settings.termsAndConditions,
       pdf_theme_color: settings.pdfThemeColor,
       custom_palettes: settings.customPalettes || [],
+      crew_roster: settings.crewRoster || [],
       updated_at: new Date().toISOString(),
-    });
+    };
+
+    const { error } = await supabase.from('lumina_settings').upsert(payload);
+    if (error && error.message && error.message.includes('crew_roster')) {
+      delete payload.crew_roster;
+      await supabase.from('lumina_settings').upsert(payload);
+    }
   } catch (e) {
     console.error('[Supabase] syncSettingsToCloud error:', e);
   }
@@ -498,6 +506,37 @@ export async function seedCloudIfEmpty(data: {
     }
   } catch (err) {
     console.warn('[Supabase] Initial seed skipped or already populated:', err);
+  }
+}
+
+export async function reseedCloudData(data: {
+  settings: StudioSettings;
+  quotations: Quotation[];
+  enquiries: Enquiry[];
+  bookings: ShootBooking[];
+  ledger: LedgerEntry[];
+  invoices: Invoice[];
+}): Promise<void> {
+  if (!supabase || !isSupabaseConfigured()) return;
+  try {
+    await syncSettingsToCloud(data.settings);
+    for (const q of data.quotations) {
+      await syncQuotationToCloud(q);
+    }
+    for (const e of data.enquiries) {
+      await syncEnquiryToCloud(e);
+    }
+    for (const b of data.bookings) {
+      await syncBookingToCloud(b);
+    }
+    for (const l of data.ledger) {
+      await syncLedgerEntryToCloud(l);
+    }
+    for (const i of data.invoices) {
+      await syncInvoiceToCloud(i);
+    }
+  } catch (err) {
+    console.error('[Supabase] Error reseeding cloud data:', err);
   }
 }
 

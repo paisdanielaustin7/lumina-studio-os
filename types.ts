@@ -24,7 +24,11 @@ export type ShootType =
   | 'Commercial Campaign'
   | 'High Jewelry Lookbook'
   | 'Parisian Runway Motion'
-  | 'Automotive Avant-Garde';
+  | 'Automotive Avant-Garde'
+  | 'Wedding Cinemastory & Stills'
+  | 'Royal Coastal Wedding'
+  | 'Heritage Nikkah & Banquet'
+  | 'Catholic Roce & Nuptials';
 
 export type ShootStatus = 
   | 'CONFIRMED' 
@@ -176,6 +180,15 @@ export interface CrewRequirement {
   id: string;
   role: string;
   number: number;
+  assignedTo?: string;
+}
+
+export interface CrewTemplateItem {
+  id: string;
+  role: string;
+  defaultCount: number;
+  defaultName?: string;
+  phone?: string;
 }
 
 export type QuotationStatus = 
@@ -227,7 +240,7 @@ export interface Enquiry {
 
 export type ViewModule = 
   | 'overview' 
-  | 'quotations'
+  | 'quotations' 
   | 'calendar' 
   | 'billing' 
   | 'ledger' 
@@ -268,6 +281,7 @@ export interface StudioSettings {
   termsAndConditions: string[];
   pdfThemeColor: PDFThemeColor;
   customPalettes?: CustomThemePalette[];
+  crewRoster?: CrewTemplateItem[];
 }
 
 export interface UserAccount {
