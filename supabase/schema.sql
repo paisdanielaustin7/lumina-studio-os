@@ -179,6 +179,13 @@ BEGIN
   CREATE POLICY "Public access lumina_invoices" ON public.lumina_invoices FOR ALL USING (true) WITH CHECK (true);
 END $$;
 
+-- Explicitly grant permissions to anon and authenticated API roles
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.lumina_users, public.lumina_settings, public.lumina_quotations, public.lumina_enquiries, public.lumina_bookings, public.lumina_ledger, public.lumina_invoices TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+
 -- =========================================================================
 -- REAL-TIME WEBSOCKET REPLICATION
 -- =========================================================================
