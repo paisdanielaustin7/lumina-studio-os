@@ -519,42 +519,47 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 {
                   id: 'slate' as SiteColorTheme,
                   name: 'Atelier Slate',
-                  sub: 'Default Haute Refinement',
+                  sub: 'Royal Azure Blue',
+                  accentColor: '#2563eb',
                   lightBg: '#f8fafc',
-                  darkBg: '#0b1120',
-                  desc: 'Deep slate navy with crisp alabaster whites & pure charcoal borders.',
+                  darkBg: '#0b0d0e',
+                  desc: 'Deep slate navy with crisp alabaster whites & Royal Azure accents.',
                 },
                 {
                   id: 'obsidian' as SiteColorTheme,
                   name: 'Obsidian Noir',
-                  sub: 'High-Contrast Editorial',
+                  sub: 'Haute Carmine Red',
+                  accentColor: '#dc2626',
                   lightBg: '#faf9f5',
-                  darkBg: '#09090b',
-                  desc: 'Brutalist jet black paired with warm bone ivory tones.',
+                  darkBg: '#0a0a0a',
+                  desc: 'Brutalist jet black & bone ivory paired with Carmine Red accents.',
                 },
                 {
                   id: 'sage' as SiteColorTheme,
                   name: 'Coastal Sage',
-                  sub: 'Botanical Atmosphere',
-                  lightBg: '#f4f7f5',
-                  darkBg: '#08140e',
-                  desc: 'Mangalore coastal eucalyptus green with pale mint undertones.',
+                  sub: 'Coastal Emerald',
+                  accentColor: '#059669',
+                  lightBg: '#f6f8f6',
+                  darkBg: '#0a0e0c',
+                  desc: 'Mangalore coastal eucalyptus green with luminous Emerald highlights.',
                 },
                 {
                   id: 'mocha' as SiteColorTheme,
                   name: 'Warm Espresso',
-                  sub: 'Earth & Leather Tone',
-                  lightBg: '#faf6f0',
-                  darkBg: '#17120e',
-                  desc: 'Rich roasted espresso brown with warm cashmere cream highlights.',
+                  sub: 'Burnished Amber',
+                  accentColor: '#c2410c',
+                  lightBg: '#f8f6f2',
+                  darkBg: '#0e0c0b',
+                  desc: 'Rich roasted espresso & cashmere cream with Burnished Amber accents.',
                 },
                 {
                   id: 'cobalt' as SiteColorTheme,
                   name: 'Deep Cobalt',
-                  sub: 'Nocturne Midnight Blue',
-                  lightBg: '#f0f4f9',
-                  darkBg: '#060d1b',
-                  desc: 'Oceanic midnight indigo with frosted arctic ice accents.',
+                  sub: 'Arctic Ice Cyan',
+                  accentColor: '#06b6d4',
+                  lightBg: '#f5f7fa',
+                  darkBg: '#080b11',
+                  desc: 'Oceanic midnight indigo with high-tech Electric Cyan accents.',
                 },
               ].map((themeOpt) => {
                 const isSelected = (studioForm.uiTheme || 'slate') === themeOpt.id;
@@ -584,8 +589,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     )}
 
                     <div className="space-y-1.5">
-                      {/* Split Light & Dark preview swatch */}
-                      <div className="h-6 w-full flex rounded-xs overflow-hidden border border-bone-border dark:border-obsidian-border">
+                      {/* Split Light & Dark preview swatch with accent dot */}
+                      <div className="h-6 w-full flex rounded-xs overflow-hidden border border-bone-border dark:border-obsidian-border relative">
                         <div
                           className="flex-1 flex items-center justify-center text-[8px] font-bold text-slate-800"
                           style={{ backgroundColor: themeOpt.lightBg }}
@@ -598,13 +603,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         >
                           DARK
                         </div>
+                        <div
+                          className="w-3.5 h-3.5 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border border-white shadow-xs"
+                          style={{ backgroundColor: themeOpt.accentColor }}
+                          title={`Theme Accent: ${themeOpt.sub}`}
+                        />
                       </div>
 
                       <div>
                         <p className="font-serif font-bold text-xs uppercase text-carbon dark:text-white">
                           {themeOpt.name}
                         </p>
-                        <p className="text-[9px] font-mono text-vermillion uppercase">
+                        <p className="text-[9px] font-mono text-vermillion uppercase font-bold">
                           {themeOpt.sub}
                         </p>
                       </div>

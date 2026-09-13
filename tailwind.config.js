@@ -33,8 +33,8 @@ module.exports = {
           light: '#2a2a2a',
         },
         vermillion: {
-          DEFAULT: '#eb3829',
-          glow: '#ff4d3d',
+          DEFAULT: 'rgb(var(--theme-accent-rgb, 235 56 41) / <alpha-value>)',
+          glow: 'rgb(var(--theme-accent-glow-rgb, 255 77 61) / <alpha-value>)',
         },
         editorial: {
           gold: '#c5a059',

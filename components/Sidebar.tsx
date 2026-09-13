@@ -184,8 +184,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }}
               className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 text-[11px] font-mono uppercase tracking-wider transition-all relative group ${
                 isActive
-                  ? 'bg-carbon text-bone dark:bg-obsidian-card dark:text-white font-bold'
-                  : 'text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white hover:bg-bone-surface dark:hover:bg-obsidian-card/60'
+                  ? 'bg-carbon text-bone dark:bg-white/10 dark:text-white font-bold'
+                  : 'text-bone-muted dark:text-obsidian-muted hover:text-carbon dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
               }`}
             >
               {isActive && (
@@ -230,7 +230,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className={`w-full flex items-center ${
             isCollapsed ? 'justify-center' : 'justify-between'
           } p-1.5 text-[10px] font-mono uppercase tracking-wider border border-bone-border dark:border-obsidian-border hover:border-carbon dark:hover:border-white transition-all`}
-          title={`Switch to ${theme === 'dark' ? 'Light (Ivory)' : 'Dark (Obsidian)'} Mode`}
+          title={`Switch to ${theme === 'dark' ? 'Light Mode' : 'Dark Mode'}`}
           aria-label="Toggle Color Theme"
         >
           <div className="flex items-center gap-1.5">
@@ -241,13 +241,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
             {!isCollapsed && (
               <span className="text-[10px] font-mono">
-                {theme === 'dark' ? 'Obsidian' : 'Bone Ivory'}
+                {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
               </span>
             )}
           </div>
           {!isCollapsed && (
             <span className="text-[8px] px-1 py-0.2 bg-carbon/5 dark:bg-white/10 font-mono">
-              Theme
+              Mode
             </span>
           )}
         </button>

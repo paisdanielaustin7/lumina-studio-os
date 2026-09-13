@@ -108,6 +108,8 @@ export default function StudioOSHome() {
   useEffect(() => {
     let activeUsersList = defaultUsers;
     let savedSession: string | null = null;
+    let activeUsername: string | null = null;
+    let activeUserId: string | null = null;
 
     if (typeof window !== 'undefined') {
       const savedUsers = localStorage.getItem('lumina_users');
@@ -145,20 +147,45 @@ export default function StudioOSHome() {
         }
       }
 
-      // Check active session
+      // Check active session from sessionStorage OR browser session cookie
       savedSession = sessionStorage.getItem('lumina_active_session');
       if (savedSession) {
         try {
-          const session = JSON.parse(savedSession);
-          const matched = activeUsersList.find(
-            (u) => u.id === session.userId || u.username === session.username
-          );
-          if (matched) {
-            setCurrentUser(matched);
-            setUserRole(matched.role);
-          }
+          const parsedSession = JSON.parse(savedSession);
+          if (parsedSession.username) activeUsername = parsedSession.username;
+          if (parsedSession.userId) activeUserId = parsedSession.userId;
         } catch (e) {
           console.error('Failed to restore session', e);
+        }
+      }
+
+      // Check browser session cookie if opened in another tab in the same browser session
+      if (!activeUsername && typeof document !== 'undefined') {
+        const cookieMatch = document.cookie.match(/(?:^|;\s*)lumina_session_user=([^;]+)/);
+        if (cookieMatch) {
+          activeUsername = decodeURIComponent(cookieMatch[1]);
+        }
+      }
+
+      if (activeUsername || activeUserId) {
+        const matched = activeUsersList.find(
+          (u) =>
+            (activeUserId && u.id === activeUserId) ||
+            (activeUsername && u.username.toLowerCase() === activeUsername.toLowerCase())
+        );
+        if (matched) {
+          setCurrentUser(matched);
+          setUserRole(matched.role);
+          sessionStorage.setItem(
+            'lumina_active_session',
+            JSON.stringify({
+              userId: matched.id,
+              username: matched.username,
+              role: matched.role,
+              loggedInAt: new Date().toISOString(),
+            })
+          );
+          document.cookie = `lumina_session_user=${encodeURIComponent(matched.username)}; path=/; SameSite=Lax`;
         }
       }
     }
@@ -290,11 +317,12 @@ export default function StudioOSHome() {
           }
 
           // Refresh active session against latest cloud permissions
-          if (savedSession) {
+          if (activeUsername || activeUserId) {
             try {
-              const session = JSON.parse(savedSession);
               const matched = effectiveUsers.find(
-                (u) => u.id === session.userId || u.username === session.username
+                (u) =>
+                  (activeUserId && u.id === activeUserId) ||
+                  (activeUsername && u.username.toLowerCase() === activeUsername.toLowerCase())
               );
               if (matched) {
                 setCurrentUser(matched);
@@ -476,6 +504,7 @@ export default function StudioOSHome() {
           loggedInAt: new Date().toISOString(),
         })
       );
+      document.cookie = `lumina_session_user=${encodeURIComponent(user.username)}; path=/; SameSite=Lax`;
     }
   };
 
@@ -483,6 +512,7 @@ export default function StudioOSHome() {
     setCurrentUser(null);
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('lumina_active_session');
+      document.cookie = 'lumina_session_user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
     }
   };
 
@@ -879,6 +909,7 @@ export default function StudioOSHome() {
           loggedInAt: new Date().toISOString(),
         })
       );
+      document.cookie = `lumina_session_user=${encodeURIComponent(user.username)}; path=/; SameSite=Lax`;
     }
   };
 
